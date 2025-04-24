@@ -1,0 +1,4 @@
+JLABEL start
+DISP "Это подпрограмма"
+LABEL start
+DISP "Это подпрограмма1"
