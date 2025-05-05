@@ -1,3 +1,4 @@
+from core.operators.do_while_operator import DoWhileOperator
 from core.operators.eval_operator import EvalOperator
 from core.operators.hivon_operator import HIVONOperator
 from core.operators.if_operator import IfOperator
@@ -58,6 +59,10 @@ class METLABInterpreter:
             'ИНАЧЕ': IfOperator(self, self.variable_manager, self.evaluator),
             'ENDIF': IfOperator(self, self.variable_manager, self.evaluator),
             'КОНЕЦЕСЛИ': IfOperator(self, self.variable_manager, self.evaluator),
+            'DO': DoWhileOperator(self, self.variable_manager, self.evaluator),
+            'ДЕЛАТЬ': DoWhileOperator(self, self.variable_manager, self.evaluator),
+            'WHILE': DoWhileOperator(self, self.variable_manager, self.evaluator),
+            'ПОКА': DoWhileOperator(self, self.variable_manager, self.evaluator),
         }
         self.context_stack = []
         self.current_context = None
@@ -93,7 +98,8 @@ class METLABInterpreter:
             'condition_stack': [], # Стек для отслеживания вложенных условий
             'executed_blocks': set(), # Множество выполненных блоков условий
             'index_map': {}, # Карта связей: {номер_строки: блок_условия}
-            'condition_blocks': [] # Список всех блоков условий в процедуре
+            'condition_blocks': [], # Список всех блоков условий в процедуре
+            'do_while_stack': [],  # Стек для циклов DO-WHILE
         }
 
         stack = []
@@ -226,5 +232,5 @@ if __name__ == "__main__":
     #
     # interpreter.execute_command("PIC cat.jpg Схема подключения устройства")
 
-    interpreter.execute_command("CALL test")
+    interpreter.execute_command("CALL do_while")
     print(interpreter.get_variables())
