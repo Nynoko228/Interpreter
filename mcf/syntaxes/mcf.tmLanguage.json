@@ -1,32 +1,48 @@
 {
-	"$schema": "https://raw.githubusercontent.com/martinring/tmlanguage/master/tmlanguage.json",
-	"name": "MCF",
-	"patterns": [
+  "$schema": "https://raw.githubusercontent.com/martinring/tmlanguage/master/tmlanguage.json",
+  "name": "MCF",
+  "scopeName": "source.mcf",
+  "fileTypes": ["mcf"],
+  "patterns": [
+    { "include": "#comments" },
+    { "include": "#keywords" },
+    { "include": "#strings" }
+  ],
+  "repository": {
+    "comments": {
+      "patterns": [
+        {
+          "name": "comment.line.number-sign.mcf",
+          "match": "#.*$"
+        }
+      ]
+    },
+    "keywords": {
+	  "patterns": [
 		{
-			"include": "#keywords"
+		  "name": "keyword.control.mcf",
+		  "match": "(?i)\\b(?:if|while|for|return)\\b"
 		},
 		{
-			"include": "#strings"
-		}
-	],
-	"repository": {
-		"keywords": {
-			"patterns": [{
-				"name": "keyword.control.mcf",
-				"match": "\\b(if|while|for|return)\\b"
-			}]
+		  "name": "keyword.control.mcf",
+		  "match": "(?i)\\b(?:math|kek|disp|показ|wait|ждать)\\b"
 		},
-		"strings": {
-			"name": "string.quoted.double.mcf",
-			"begin": "\"",
-			"end": "\"",
-			"patterns": [
-				{
-					"name": "constant.character.escape.mcf",
-					"match": "\\\\."
-				}
-			]
+		{
+		  "name": "keyword.control.mcf",
+		  "match": "(?i)\\b(?:memi|ввод_числа|mem2|rslt|opbr)\\b"
 		}
+	  ]
 	},
-	"scopeName": "source.mcf"
+    "strings": {
+      "name": "string.quoted.double.mcf",
+      "begin": "\"",
+      "end": "\"",
+      "patterns": [
+        {
+          "name": "constant.character.escape.mcf",
+          "match": "\\\\."
+        }
+      ]
+    }
+  }
 }

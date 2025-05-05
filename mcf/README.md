@@ -10,7 +10,7 @@
 – Задача «Run MyLang Interpreter» для запуска `interpreter.py` на текущем файле.
 
 ## Установка
-
+AMOGUSssss
 1. Сборка пакета:
    ```bash
    vsce package
