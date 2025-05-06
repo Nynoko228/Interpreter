@@ -19,19 +19,11 @@
     },
     "keywords": {
 	  "patterns": [
-		{
-		  "name": "keyword.control.mcf",
-		  "match": "(?i)\\b(?:if|while|for|return)\\b"
-		},
-		{
-		  "name": "keyword.control.mcf",
-		  "match": "(?i)\\b(?:math|kek|disp|показ|wait|ждать)\\b"
-		},
-		{
-		  "name": "keyword.control.mcf",
-		  "match": "(?i)\\b(?:memi|ввод_числа|mem2|rslt|opbr)\\b"
-		}
-	  ]
+        {
+            "name": "keyword.control.mcf",
+            "match": "(?i)\\b(math|МАТЕМ|disp|ПОКАЗ|wait|ЖДАТЬ|memi|ВВОД_ЧИСЛА|if|ЕСЛИ|elseif|ИНАЧЕЕСЛИ|else|ИНАЧЕ|endif|КОНЕЦЕСЛИ|call|do|ДЕЛАТЬ|while|ПОКА|rslt|opbr|eval|ОЦЕН|pic|memc|ИТОГ|label|ljump|jlabel|hivon|ВЫСНАПР_ВКЛ)\\b"
+        }
+      ]
 	},
     "strings": {
       "name": "string.quoted.double.mcf",

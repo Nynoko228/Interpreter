@@ -1,7 +1,3 @@
-# MyLang Language Support
-
-Расширение для VS Code (и web-IDE на базе code-server), которое добавляет подсветку синтаксиса и поддержку задач для вашего алгоритмического языка MyLang.
-
 ## Возможности
 
 – Подсветка ключевых слов: `if`, `else`, `while` и т. д.  
@@ -10,7 +6,7 @@
 – Задача «Run MyLang Interpreter» для запуска `interpreter.py` на текущем файле.
 
 ## Установка
-AMOGUSssss
+A
 1. Сборка пакета:
    ```bash
    vsce package
