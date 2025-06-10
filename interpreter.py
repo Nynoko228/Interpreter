@@ -20,6 +20,7 @@ from core.operators.comment_operator import CommentOperator
 from core.operators.memi_operator import MemiOperator
 from core.operators.mem2_operator import Mem2Operator
 from core.operators.call_operator import CallOperator
+import sys
 
 class METLABInterpreter:
     def __init__(self):
@@ -150,8 +151,8 @@ class METLABInterpreter:
             line = procedure_code[context['index']]
             self.execute_command(line)
             context['index'] += 1  # Инкремент индекса
-            print(context['index'])
-            print(context['executed_blocks'])
+            # print(context['index'])
+            # print(context['executed_blocks'])
         self.context_stack.pop()
 
     def get_variables(self):
@@ -232,5 +233,5 @@ if __name__ == "__main__":
     #
     # interpreter.execute_command("PIC cat.jpg Схема подключения устройства")
 
-    interpreter.execute_command("CALL do_while")
-    print(interpreter.get_variables())
+    interpreter.execute_command(f"CALL {sys.argv[1]}")
+    # print(interpreter.get_variables())

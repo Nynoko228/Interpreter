@@ -21,7 +21,7 @@
 	  "patterns": [
         {
             "name": "keyword.control.mcf",
-            "match": "(?i)\\b(math|МАТЕМ|disp|ПОКАЗ|wait|ЖДАТЬ|memi|ВВОД_ЧИСЛА|if|ЕСЛИ|elseif|ИНАЧЕЕСЛИ|else|ИНАЧЕ|endif|КОНЕЦЕСЛИ|call|do|ДЕЛАТЬ|while|ПОКА|rslt|opbr|eval|ОЦЕН|pic|memc|ИТОГ|label|ljump|jlabel|hivon|ВЫСНАПР_ВКЛ)\\b"
+            "match": "(?i)\\b(math|МАТЕМ|disp|ПОКАЗ|wait|ЖДАТЬ|memi|ВВОД_ЧИСЛА|mem2|ВВОД_СТРОКИ|if|ЕСЛИ|elseif|ИНАЧЕЕСЛИ|else|ИНАЧЕ|endif|КОНЕЦЕСЛИ|call|do|ДЕЛАТЬ|while|ПОКА|rslt|opbr|eval|ОЦЕН|pic|memc|ИТОГ|label|ljump|jlabel|hivon|ВЫСНАПР_ВКЛ)\\b"
         }
       ]
 	},

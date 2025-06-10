@@ -21,8 +21,8 @@ class OpbrOperator(BaseOperator):
         self.vm.set_variable('MEM', 'number', result)
 
         # Автоматический вызов EVAL после сохранения результата
-        if self.eval_operator:
-            self._trigger_eval(msg)
+        # if self.eval_operator:
+        #     self._trigger_eval(msg)
 
     def _format_message(self, message):
         lines = message.split('\n')

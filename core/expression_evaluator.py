@@ -10,7 +10,7 @@ class ExpressionEvaluator:
         # print(f"EXPR: {expression}")
         # Заменяем логические операторы на Python-совместимые
         expression = (
-            re.sub(r"(>=|<=|==|!=|&&|\|\||>|<)", r" \1 ", expression)  # Добавляем пробелы вокруг операторов
+            re.sub(r"(>=|<=|==|!=|&&|\|\||>|<)", r" \1 ", expression)
             .replace("&&", "and")
             .replace("||", "or")
         )

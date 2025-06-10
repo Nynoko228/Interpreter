@@ -1,25 +1,43 @@
-# 1) Базовый образ с code-server
+# Базовый образ с code-server
 FROM codercom/code-server:latest
 
-# 2) Задаём пароль для входа
+# Задаём переменные прокси
+ARG HTTP_PROXY="http://10.140.1.4:8080"
+ARG HTTPS_PROXY="http://10.140.1.4:8080"
+
+# Переключаемся на root
+USER root
+
+# 1. Настраиваем прокси для системы
+ENV http_proxy=$HTTP_PROXY
+ENV https_proxy=$HTTPS_PROXY
+
+# 2. Настраиваем прокси для apt
+RUN echo 'Acquire::http::Proxy "'${HTTP_PROXY}'";' > /etc/apt/apt.conf.d/99proxy && \
+    echo 'Acquire::https::Proxy "'${HTTPS_PROXY}'";' >> /etc/apt/apt.conf.d/99proxy
+
+# 3. Устанавливаем Python и зависимости
+RUN apt-get update && \
+    apt-get install -y \
+    python3 \
+    python3-venv \
+    python3-pip
+
+# 4. Создаём виртуальное окружение
+RUN python3 -m venv /opt/mcf-venv
+
+# 5. Настраиваем прокси для pip
+RUN /opt/mcf-venv/bin/pip install --proxy=$HTTP_PROXY pygls
+
+USER 1000
+# 6. Копируем проект
+WORKDIR /home/coder/mcf-extension
+# COPY . .
+
+
+
+# 8. Очищаем окружение
+EXPOSE 8080
 ENV PASSWORD="Test1234"
 
-# 3) Устанавливаем рабочую директорию
-WORKDIR /home/coder/project
-
-# 4) Копируем весь проект (interpreter.py, папку core/, папку mylang/ с VSIX и .vscode/)
-COPY . /home/coder/project/
-
-# 5) Устанавливаем ваше расширение из VSIX, который лежит в mylang/
-RUN if ls /home/coder/project/mylang/*.vsix 1> /dev/null 2>&1; then \
-      code-server --install-extension /home/coder/project/mylang/*.vsix && \
-      echo "✅ MyLang extension installed" ; \
-    else \
-      echo "ℹ️  No VSIX found in mylang/, skipping extension install" ; \
-    fi
-
-# 6) Открываем порт 8080
-EXPOSE 8080
-
-# 7) По запуску стартуем code-server на всех интерфейсах
 ENTRYPOINT ["dumb-init", "code-server", "--bind-addr", "0.0.0.0:8080", "--auth", "password"]

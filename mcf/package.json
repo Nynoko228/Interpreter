@@ -1,14 +1,14 @@
 {
   "name": "mcf",
-  "displayName": "MCF",
-  "description": "",
-  "version": "0.0.4",
+  "displayName": "MCF Language",
+  "description": "METLAB Complete Support",
+  "version": "0.0.8",
   "engines": {
-    "vscode": "^1.99.0"
+    "vscode": "^1.90.0"
   },
-  "categories": [
-    "Programming Languages"
-  ],
+  "categories": ["Programming Languages"],
+  "activationEvents": ["onLanguage:mcf"],
+  "main": "./client/extension.js",
   "contributes": {
     "languages": [{
       "id": "mcf",
@@ -20,6 +20,29 @@
       "language": "mcf",
       "scopeName": "source.mcf",
       "path": "./syntaxes/mcf.tmLanguage.json"
-    }]
+    }],
+    "configuration": {
+      "type": "object",
+      "title": "MCF Language Server",
+      "properties": {
+        "mcf.lsp.serverPath": {
+          "default": "/opt/mcf-venv/bin/python"
+        },
+        "mcf.lsp.serverScript": {
+          "default": "/home/coder/mcf-extension/mcf/server/lsp_server.py"
+        }
+      }
+    }
+  },
+  "scripts": {
+    "compile": "npm run compile-client",
+    "compile-client": "tsc -p client",
+    "watch-client": "tsc -w -p client"
+  },
+  "devDependencies": {
+    "@types/node": "^18.0.0",
+    "@types/vscode": "^1.90.0",
+    "typescript": "^5.0.0",
+    "vscode-languageclient": "^9.0.0"
   }
 }

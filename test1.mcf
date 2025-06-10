@@ -1,0 +1,6 @@
+MEMI        Введите количество эталонных средств поверки
+MATH        cnt = MEM
+DO
+DISP        {cnt}
+MATH        cnt = cnt - 1
+WHILE       cnt > 0
