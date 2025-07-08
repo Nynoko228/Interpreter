@@ -1,5 +1,6 @@
 from core.operators.do_while_operator import DoWhileOperator
 from core.operators.eval_operator import EvalOperator
+from core.operators.generate_protocol_operator import GenerateProtocolOperator
 from core.operators.hivon_operator import HIVONOperator
 from core.operators.if_operator import IfOperator
 from core.operators.ifelse_operator import IfElseOperator
@@ -11,6 +12,7 @@ from core.operators.pic_operator import PicOperator
 from core.operators.result_operator import ResultOperator
 from core.operators.sfon_operator import SfonOperator
 from core.operators.target_operator import TargetOperator
+from core.operators.write_operator import WriteOperator
 from core.variable_manager import VariableManager
 from core.expression_evaluator import ExpressionEvaluator
 from core.operators.math_operator import MathOperator
@@ -20,9 +22,10 @@ from core.operators.comment_operator import CommentOperator
 from core.operators.memi_operator import MemiOperator
 from core.operators.mem2_operator import Mem2Operator
 from core.operators.call_operator import CallOperator
+from core.operators.load_protocol_operator import LoadProtocolOperator
 import sys
 
-class METLABInterpreter:
+class Interpreter:
     def __init__(self):
         self.variable_manager = VariableManager()
         self.evaluator = ExpressionEvaluator(self.variable_manager)
@@ -64,6 +67,13 @@ class METLABInterpreter:
             'ДЕЛАТЬ': DoWhileOperator(self, self.variable_manager, self.evaluator),
             'WHILE': DoWhileOperator(self, self.variable_manager, self.evaluator),
             'ПОКА': DoWhileOperator(self, self.variable_manager, self.evaluator),
+            'LOAD_PROTOCOL': LoadProtocolOperator(self.variable_manager, self.evaluator),
+            'ЗАГРУЗИТЬ_ПРОТОКОЛ': LoadProtocolOperator(self.variable_manager, self.evaluator),
+            'GENERATE_PROTOCOL': GenerateProtocolOperator(self.variable_manager, self.evaluator),
+            'СФОРМИРОВАТЬ_ПРОТОКОЛ': GenerateProtocolOperator(self.variable_manager, self.evaluator),
+            'WRITE': WriteOperator(self.variable_manager, self.evaluator),
+            'ЗАПИСАТЬ': WriteOperator(self.variable_manager, self.evaluator),
+
         }
         self.context_stack = []
         self.current_context = None
@@ -155,6 +165,50 @@ class METLABInterpreter:
             # print(context['executed_blocks'])
         self.context_stack.pop()
 
+    def execute_script(self, script_lines):
+        """Выполняет скрипт с поддержкой многострочных команд"""
+        index = 0
+        while index < len(script_lines):
+            line = script_lines[index].strip()
+
+            # Пропускаем пустые строки и комментарии
+            if not line or self.comment_operator.is_comment(line):
+                index += 1
+                continue
+
+            operator_name = line.split()[0].upper()
+
+            # Проверяем, поддерживает ли оператор многострочный ввод
+            if operator_name in self.operators and self.operators[operator_name].is_multiline_command(line):
+                # Собираем все строки команды
+                command_lines = [line]
+                index += 1
+
+                # Собираем последующие строки с отступом
+                while index < len(script_lines):
+                    next_line = script_lines[index]
+                    # Пропускаем комментарии внутри многострочной команды
+                    stripped_line = next_line.strip()
+                    if not stripped_line or self.comment_operator.is_comment(stripped_line):
+                        index += 1
+                        continue
+                    if next_line.startswith((' ', '\t')) and not self.comment_operator.is_comment(next_line.strip()):
+                        command_lines.append(next_line.rstrip())
+                        index += 1
+                    else:
+                        break
+
+                full_command = "\n".join(command_lines)
+                self.execute_command(full_command)
+            else:
+                # Обычная однострочная команда
+                self.execute_command(line)
+                index += 1
+
+    def _execute_procedure(self, procedure_code):
+        """Выполняет код процедуры с поддержкой многострочных команд"""
+        self.execute_script(procedure_code)
+
     def get_variables(self):
         return self.variable_manager.get_all_variables()
 
@@ -175,7 +229,7 @@ class METLABInterpreter:
             context['index'] += 1
 
 if __name__ == "__main__":
-    interpreter = METLABInterpreter()
+    interpreter = Interpreter()
 
     # # Комментарии игнорируются
     # interpreter.execute_command("# Это комментарий")
@@ -233,5 +287,8 @@ if __name__ == "__main__":
     #
     # interpreter.execute_command("PIC cat.jpg Схема подключения устройства")
 
-    interpreter.execute_command(f"CALL {sys.argv[1]}")
+    with open(sys.argv[1], 'r', encoding='utf-8') as f:
+        script_lines = f.readlines()
+
+    interpreter.execute_script(script_lines)
     # print(interpreter.get_variables())

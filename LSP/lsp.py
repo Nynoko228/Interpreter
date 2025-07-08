@@ -1,5 +1,5 @@
 from lsprotocol.types import CompletionItem, CompletionList, CompletionParams, InitializeParams, InitializeResult
-from interpreter import METLABInterpreter
+from interpreter import Interpreter
 from pygls.protocol import LanguageServerProtocol as Protocol
 from pygls.server import LanguageServer
 from pygls.workspace import Workspace
@@ -8,7 +8,7 @@ from typing import List, Optional
 class METLABLanguageServer(LanguageServer):
     def __init__(self):
         super().__init__()
-        self.interpreter = METLABInterpreter()
+        self.interpreter = Interpreter()
         self.operators = list(self.interpreter.operators.keys())
 
 COMPLETION = "textDocument/completion"

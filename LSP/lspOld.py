@@ -7,12 +7,12 @@ from pygls.lsp.types import (
 from pygls.lsp.methods import (
     COMPLETION, INITIALIZE, TEXT_DOCUMENT_DID_OPEN, TEXT_DOCUMENT_DID_CHANGE
 )
-from interpreter import METLABInterpreter
+from interpreter import Interpreter
 
 class METLABLanguageServer(LanguageServer):
     def __init__(self):
         super().__init__()
-        self.interpreter = METLABInterpreter()
+        self.interpreter = Interpreter()
         self.operators = list(self.interpreter.operators.keys())
 
 server = METLABLanguageServer()
