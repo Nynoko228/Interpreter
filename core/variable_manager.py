@@ -31,13 +31,15 @@ class VariableManager:
         # }
 
     def get_variable(self, name):
-        var_name = name.upper()
+        var_name = name # Сделаем регистрозависимым
+        # var_name = name.upper()
         if var_name not in self.variables:
             raise NameError(f"Переменная {var_name} не определена")
         return self.variables[var_name]
 
     def set_variable(self, name, var_type, value):
-        var_name = name.upper()
+        var_name = name # Сделаем регистрозависимым
+        # var_name = name.upper()
 
         if not re.match(r'^[a-zA-Zа-яА-Я_][a-zA-Z0-9а-яА-Я_]*$', var_name):
             raise NameError(f"Некорректное имя переменной: {var_name}")

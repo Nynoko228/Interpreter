@@ -1,5 +1,9 @@
-import re
+# Python tkinter hello world program
 
-if __name__ == "__main__":
-    pattern = re.compile(r'\{\{(.*?)\}\}')
-    print(pattern.findall(input()))
+from tkinter import *
+
+root = Tk()
+a = Label(root, text ="Hello World")
+a.pack()
+
+root.mainloop()

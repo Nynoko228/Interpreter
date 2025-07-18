@@ -29,7 +29,8 @@ class ExpressionEvaluator:
 
     def _replace_variables(self, expr):
             def replacer(match):
-                var_name = match.group(1).upper()
+                # var_name = match.group(1).upper()
+                var_name = match.group(1)
                 var = self.vm.get_variable(var_name)
                 return str(var[1])
 

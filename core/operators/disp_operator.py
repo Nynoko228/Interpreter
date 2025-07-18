@@ -1,7 +1,6 @@
 import re
 from .base_operator import BaseOperator
 
-
 class DispOperator(BaseOperator):
 
     def is_multiline_command(self, command):
