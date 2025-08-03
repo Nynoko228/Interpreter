@@ -97,55 +97,78 @@ class WriteOperator(BaseOperator):
 
     def _parse_targets(self, target_part):
         """Анализирует целевые спецификации"""
-        # print(f"_parse_targets: {target_part}")
-        # print(':' in target_part)
-
-        # Диапазон ячеек A1:B3
-        if ':' in target_part:
-            start, end = target_part.split(':', 1)
-            start = start.strip()
-            end = end.strip()
-
-            # Преобразуем в координаты
-            start_coords = self._parse_target_to_coords(start)
-            end_coords = self._parse_target_to_coords(end)
-            # print(start_coords, end_coords)
-            # print(start, end)
-            if not start_coords or not end_coords:
-                raise ValueError(f"Неверный формат диапазона: {start}:{end}")
-
-            # Получаем главные ячейки в диапазоне
-            min_row = min(start_coords[0], end_coords[0])
-            max_row = max(start_coords[0], end_coords[0])
-            min_col = min(start_coords[1], end_coords[1])
-            max_col = max(start_coords[1], end_coords[1])
-
-            # Получаем главные ячейки
-            base_cells = get_base_cells_in_range(
-                self.vm.protocol.worksheet,
-                min_row, min_col, max_row, max_col
-            )
-
-            # Преобразуем координаты в адреса
-            addresses = [f"{get_column_letter(col)}{row}" for row, col in base_cells]
-            return addresses
-
+        tp = target_part.strip()
+        # Список целей в квадратных скобках, с поддержкой диапазонов
+        if tp.startswith('[') and tp.endswith(']'):
+            content = tp[1:-1]
+            items = [item.strip() for item in content.split(',')]
+            results = []
+            for item in items:
+                if ':' in item:
+                    start, end = [x.strip() for x in item.split(':', 1)]
+                    results.extend(self._expand_cell_range(start, end))
+                else:
+                    results.append(self._normalize_target(item))
+            return results
+        # Простой диапазон без скобок
+        if ':' in tp:
+            start, end = [x.strip() for x in tp.split(':', 1)]
+            return self._expand_cell_range(start, end)
         # Одиночная цель
-        if not (target_part.startswith('[') and target_part.endswith(']')):
-            return [self._normalize_target(target_part)]
+        return [self._normalize_target(tp)]
 
-        # Список целей или диапазон
-        # print(target_part)
-        try:
-            targets = target_part[1:-1].split(',')
-            # print(f"targets: {targets}")
-            if isinstance(targets, list):
-                return [self._normalize_target(t) for t in targets]
-        except (ValueError, SyntaxError):
-            pass
 
-        # Одиночная цель в скобках
-        return [self._normalize_target(target_part[1:-1])]
+    # def _parse_targets(self, target_part):
+    #     """Анализирует целевые спецификации"""
+    #     # print(f"_parse_targets: {target_part}")
+    #     # print(':' in target_part)
+    #
+    #     # Диапазон ячеек A1:B3
+    #     if ':' in target_part:
+    #         start, end = target_part.split(':', 1)
+    #         start = start.strip()
+    #         end = end.strip()
+    #
+    #         # Преобразуем в координаты
+    #         start_coords = self._parse_target_to_coords(start)
+    #         end_coords = self._parse_target_to_coords(end)
+    #         # print(start_coords, end_coords)
+    #         # print(start, end)
+    #         if not start_coords or not end_coords:
+    #             raise ValueError(f"Неверный формат диапазона: {start}:{end}")
+    #
+    #         # Получаем главные ячейки в диапазоне
+    #         min_row = min(start_coords[0], end_coords[0])
+    #         max_row = max(start_coords[0], end_coords[0])
+    #         min_col = min(start_coords[1], end_coords[1])
+    #         max_col = max(start_coords[1], end_coords[1])
+    #
+    #         # Получаем главные ячейки
+    #         base_cells = get_base_cells_in_range(
+    #             self.vm.protocol.worksheet,
+    #             min_row, min_col, max_row, max_col
+    #         )
+    #
+    #         # Преобразуем координаты в адреса
+    #         addresses = [f"{get_column_letter(col)}{row}" for row, col in base_cells]
+    #         return addresses
+    #
+    #     # Одиночная цель
+    #     if not (target_part.startswith('[') and target_part.endswith(']')):
+    #         return [self._normalize_target(target_part)]
+    #
+    #     # Список целей или диапазон
+    #     # print(target_part)
+    #     try:
+    #         targets = target_part[1:-1].split(',')
+    #         # print(f"targets: {targets}")
+    #         if isinstance(targets, list):
+    #             return [self._normalize_target(t) for t in targets]
+    #     except (ValueError, SyntaxError):
+    #         pass
+    #
+    #     # Одиночная цель в скобках
+    #     return [self._normalize_target(target_part[1:-1])]
 
     def _normalize_target(self, target):
         """Нормализует формат цели"""

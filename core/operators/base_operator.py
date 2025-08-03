@@ -47,14 +47,15 @@ class BaseOperator(ABC):
 
     def _replace_variables(self, text):
         def replacer(match):
-            # print(f"match: {match}")
             var_name = match.group(1)
-            # print(f"var_name: {var_name}")
             try:
-                var_value = str(self.vm.get_variable(var_name)[1])
-                return var_value
+                _, value = self.vm.get_variable(var_name)
+                # Проверяем тип
+                if isinstance(value, float) and not value.is_integer():
+                    return str(value).replace('.', ',')
+                return str(value)
             except NameError:
-                return match.group(0)  # Если переменная не найдена, оставляем как есть
+                return match.group(0)  # Оставляем как есть, если переменная не найдена
 
         return re.sub(r'\{([a-zA-Zа-яА-Я_]+[a-zA-Zа-яА-Я0-9_]*)\}', replacer, text)
 

@@ -14,7 +14,7 @@ MATH predel_niz = MEM
 MEMI Введите верхний предел измерения в °С
 MATH predel_verx = MEM
 MEM2 Введите принадлежность средства измерения (Цех)
-MATH cex = MEM2
+MATH department = MEM2
 MEMI Введите температуру окружающего воздуха в °С
 ЕСЛИ  MEM > 25 || MEM < 15
 ВЫХОД
@@ -32,4 +32,6 @@ EXIT
 ENDIF
 MEM2 Укажите средства измерения, используемые при выполнении калибровки в соответствии с п. 2
 MATH si = MEM2
-MEM2
+OPBR Внешний осмотр соответствует пунтку 5.1?
+IF MEM == 0
+WRITE [type, number, year, interval, last_calib, "{predel_niz}...{predel_verx}", department, temp, time, si] -> []
