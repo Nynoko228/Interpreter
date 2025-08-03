@@ -1,4 +1,7 @@
 import re
+import sys
+import tkinter as tk
+from tkinter import messagebox
 from .base_operator import BaseOperator
 
 
@@ -21,10 +24,86 @@ class Mem2Operator(BaseOperator):
         formatted_prompt = self._format_message(prompt)
 
         # Получаем текстовый ввод от пользователя
-        user_input = self._get_text_input(formatted_prompt)
+        # user_input = self._get_text_input(formatted_prompt)
+        user_input = self._get_text_input_gui(formatted_prompt)
 
         # Сохраняем в системную переменную MEM2
         self.vm.set_variable('MEM2', 'string', user_input)
+
+    def _get_text_input_gui(self, prompt):
+        """Получает строку от пользователя через окно tkinter."""
+
+        result = {"value": None}
+
+        def on_submit():
+            val = entry.get().strip()
+            if not val:
+                messagebox.showwarning("Пустой ввод", "Введите непустую строку.")
+                return
+            result["value"] = val
+            root.destroy()
+
+        def on_quit():
+            root.destroy()
+            sys.exit()
+
+        # Окно
+        root = tk.Tk()
+        root.title("Ввод строки")
+        root.geometry("500x250")
+        root.resizable(False, False)
+        root.attributes('-topmost', True)
+        root.lift()
+        root.focus_force()
+
+        # Текст
+        label = tk.Label(
+            root, text=prompt, wraplength=460,
+            justify="left", padx=20, pady=20,
+            font=("Arial", 12)
+        )
+        label.pack()
+
+        # Поле ввода
+        entry = tk.Entry(root, font=("Arial", 14), justify="left", width=40)
+        entry.pack(pady=10)
+        entry.focus_set()
+
+        # Кнопки
+        button_frame = tk.Frame(root)
+        button_frame.pack(pady=15)
+
+        button_style = {
+            "font": ("Arial", 12, "bold"),
+            "width": 16,
+            "height": 2,
+            "bd": 3,
+            "relief": "raised",
+            "activebackground": "#cce5ff"
+        }
+
+        submit_btn = tk.Button(
+            button_frame, text="Продолжить", bg="#d4edda",
+            command=on_submit, **button_style
+        )
+        quit_btn = tk.Button(
+            button_frame, text="Прекратить", bg="#f8d7da",
+            command=on_quit, **button_style
+        )
+
+        submit_btn.pack(side="left", padx=20)
+        quit_btn.pack(side="right", padx=20)
+
+        root.mainloop()
+
+        return result["value"]
+
+    def _get_text_input(self, prompt):
+        """Получает текстовый ввод от пользователя"""
+        # В реальном приложении можно использовать GUI-диалог ввода
+        user_input = input(f"{prompt}\n> ")
+        return user_input.strip()  # Удаляем лишние пробелы по краям
+
 
     # def _format_prompt(self, prompt):
     #     """Форматирует многострочный текст для отображения"""
@@ -53,8 +132,3 @@ class Mem2Operator(BaseOperator):
     #
     #     return re.sub(r'\{([a-zA-Zа-яА-Я_]+[a-zA-Zа-яА-Я0-9_]*)\}', replacer, text)
 
-    def _get_text_input(self, prompt):
-        """Получает текстовый ввод от пользователя"""
-        # В реальном приложении можно использовать GUI-диалог ввода
-        user_input = input(f"{prompt}\n> ")
-        return user_input.strip()  # Удаляем лишние пробелы по краям

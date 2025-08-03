@@ -1,11 +1,19 @@
-ВВОД_ЧИСЛА Вводим
-IF MEM > 10
-    DISP "Значение больше 10"
-    IF MEM > 14
-        DISP "Значение больше 14"
-    ENDIF
-ELSEIF MEM > 5
-    DISP "Значение больше 5"
-ELSE
-    DISP "Значение меньше 6"
-ENDIF
+LOAD_PROTOCOL C:\Users\Alexander\PycharmProjects\Interpreter\Protocol poverki\Testiruem\Копия_Термометр_стеклянный_(1)_редактированный — копия.xlsx
+MATH start = 0
+MATH end = 5
+MATH dev = "sdsdsd"
+WRITE [dev, "{start}...{end}"] -> [{{DEVICE_TYPE}}, {{MEASUREMENT_LIMITS}}]
+GENERATE_PROTOCOL C:\Users\Alexander\PycharmProjects\Interpreter\Protocol poverki\Testiruem\Копия_Термометр_стеклянный_(1)_редактированный — копия(2).xlsx
+
+#OPBR Вы используете ГОСТ 8.279-78 "Государственная система обеспечения единства измерений. Термометры стеклянные жидкостные рабочие. Методика поверки"?
+#IF MEM == 0
+#DISP Используйте корректный ГОСТ
+#EXIT
+#ENDIF
+#MEM2 Введите температуру окружающего воздуха в °С
+#DISP {MEM2}
+#ЕСЛИ  MEM > 25 || MEM < 15
+#ВЫХОД
+#КОНЕЦЕСЛИ
+#DISP НЕ конец
+#DISP Всё

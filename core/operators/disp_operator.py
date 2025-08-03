@@ -1,4 +1,8 @@
 import re
+import sys
+import tkinter as tk
+from tkinter import messagebox
+
 from .base_operator import BaseOperator
 
 class DispOperator(BaseOperator):
@@ -7,20 +11,82 @@ class DispOperator(BaseOperator):
         return True
 
     def process_multiline_command(self, command, next_lines):
-        # Объединяем все строки команды
         return command + "\n" + "\n".join(next_lines) if next_lines else command
 
     def execute(self, command):
         # Удаляем ключевое слово DISP
         message = re.sub(r'^(DISP|ПОКАЗ)\s*', '', command, flags=re.IGNORECASE)
-
         message = self.remove_comments(message).strip()
-
-        # Обрабатываем многострочный текст и подстановку переменных
         formatted_message = self._format_message(message)
 
-        # Выводим сообщение (в реальной реализации можно использовать GUI)
-        print(formatted_message)
+        # Создаем GUI-окно с сообщением и кнопками
+        self.show_message_box(formatted_message)
+
+    def show_message_box(self, message):
+        root = tk.Tk()
+        root.title("Сообщение от DISP")
+        root.geometry("500x250")
+        root.resizable(False, False)
+
+        # Установка окна поверх всех
+        root.attributes('-topmost', True)
+        root.lift()
+        root.focus_force()
+
+        # Основной текст
+        label = tk.Label(
+            root,
+            text=message,
+            wraplength=460,
+            justify="left",
+            padx=20,
+            pady=20,
+            font=("Arial", 12)
+        )
+        label.pack(expand=True, fill="both")
+
+        # Контейнер для кнопок
+        button_frame = tk.Frame(root)
+        button_frame.pack(pady=15)
+
+        # Обработчики кнопок
+        def on_continue():
+            root.destroy()
+
+        def on_quit():
+            root.destroy()
+            sys.exit(0)
+
+        # Стили кнопок
+        button_style = {
+            "font": ("Arial", 12, "bold"),
+            "width": 16,
+            "height": 2,
+            "bd": 3,
+            "relief": "raised",
+            "activebackground": "#cce5ff"
+        }
+
+        continue_button = tk.Button(
+            button_frame,
+            text="Продолжить",
+            command=on_continue,
+            bg="#d4edda",
+            **button_style
+        )
+        quit_button = tk.Button(
+            button_frame,
+            text="Остановить",
+            command=on_quit,
+            bg="#f8d7da",
+            **button_style
+        )
+
+        continue_button.pack(side="left", padx=20)
+        quit_button.pack(side="right", padx=20)
+
+        root.mainloop()
+
 
     # def _format_message(self, message):
     #     lines = message.split('\n')

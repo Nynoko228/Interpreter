@@ -1,0 +1,13 @@
+LOAD_PROTOCOL C:\MeMorozov\Interpreter\Protocol poverki\Testiruem\Копия_Термометр_стеклянный_(1).xlsx
+MATH MEM = 9
+DISP [MEM]
+#CALL main.mcf
+#DISP {pi}
+#EVAL Да | Нет -> A7
+#WRITE MEM -> AZ13
+#WRITE MEM -> A5:K6
+#WRITE [MEM, MEM] -> [{{START}}, {{START}}, {{START}}]
+#MATH MEM = 4
+WRITE [5, 7] -> A29:W29
+#WRITE MEM -> AH6
+GENERATE_PROTOCOL C:\MeMorozov\Interpreter\Protocol poverki\Testiruem\Копия_Термометр_стеклянный_(2).xlsx

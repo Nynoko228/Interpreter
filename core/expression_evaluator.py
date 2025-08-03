@@ -26,17 +26,21 @@ class ExpressionEvaluator:
         except Exception as e:
             raise ValueError(f"Ошибка в логическом выражении: {expression}. {str(e)}")
 
-
     def _replace_variables(self, expr):
-            def replacer(match):
-                # var_name = match.group(1).upper()
-                var_name = match.group(1)
-                var = self.vm.get_variable(var_name)
-                return str(var[1])
+        def replacer(match):
+            var_name = match.group(1)
+            var_type, value = self.vm.get_variable(var_name)
 
-            return re.sub(
-                r'\b([a-zA-Zа-яА-Я_]+[a-zA-Zа-яА-Я0-9_]*)\b',
-                replacer,
-                expr
-            )
+            # Добавляем кавычки для строковых переменных
+            if var_type == 'string':
+                return f'"{value}"'  # Или f"'{value}'" в зависимости от контекста
+            elif var_type == 'list':
+                return str(value)  # Для списков возвращаем строковое представление
+            return str(value)
+
+        return re.sub(
+            r'\b([a-zA-Zа-яА-Я_]+[a-zA-Zа-яА-Я0-9_]*)\b',
+            replacer,
+            expr
+        )
 

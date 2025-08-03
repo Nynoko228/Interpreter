@@ -19,23 +19,23 @@ class WriteOperator(BaseOperator):
 
         # Получение значения
         value = self._parse_value(value_part)
-        print(f"value в write_operator: {value}")
+        # print(f"value в write_operator: {value}")
         # print(type(value))
 
         # Определение целей
         # print(target_part)
         # print(type(target_part))
         targets = self._parse_targets(target_part)
-        print(f"targets в write_operator: {targets}")
+        # print(f"targets в write_operator: {targets}")
         # print(type(targets))
-        print(type(value), type(targets))
+        # print(type(value), type(targets))
         # if len(value) != len(targets):
         #     raise Exception("Количество элементов для записи и количество ячеек должны быть равны")
         # Запись в протокол
         self._write_to_protocol(targets, value)
 
         # Логирование
-        print(f"WRITE: {value} -> {targets}")
+        # print(f"WRITE: {value} -> {targets}")
         return value
 
     def _parse_value(self, value_part):
@@ -48,7 +48,8 @@ class WriteOperator(BaseOperator):
         # Строковые значения
         if (value_part.startswith('"') and value_part.endswith('"')) or \
                 (value_part.startswith("'") and value_part.endswith("'")):
-            return value_part[1:-1]
+            value_part = super()._replace_variables(value_part[1:-1])
+            return value_part
 
         # Булевы значения
         if value_part.lower() in ('true', 'истина'):
@@ -96,8 +97,8 @@ class WriteOperator(BaseOperator):
 
     def _parse_targets(self, target_part):
         """Анализирует целевые спецификации"""
-        print(f"_parse_targets: {target_part}")
-        print(':' in target_part)
+        # print(f"_parse_targets: {target_part}")
+        # print(':' in target_part)
 
         # Диапазон ячеек A1:B3
         if ':' in target_part:
@@ -108,8 +109,8 @@ class WriteOperator(BaseOperator):
             # Преобразуем в координаты
             start_coords = self._parse_target_to_coords(start)
             end_coords = self._parse_target_to_coords(end)
-            print(start_coords, end_coords)
-            print(start, end)
+            # print(start_coords, end_coords)
+            # print(start, end)
             if not start_coords or not end_coords:
                 raise ValueError(f"Неверный формат диапазона: {start}:{end}")
 
@@ -137,7 +138,7 @@ class WriteOperator(BaseOperator):
         # print(target_part)
         try:
             targets = target_part[1:-1].split(',')
-            print(f"targets: {targets}")
+            # print(f"targets: {targets}")
             if isinstance(targets, list):
                 return [self._normalize_target(t) for t in targets]
         except (ValueError, SyntaxError):
@@ -151,16 +152,16 @@ class WriteOperator(BaseOperator):
         # Метка в фигурных скобках
         target = target.strip()
         if target.startswith('{{') and target.endswith('}}'):
-            print(f"Таргет {target} - метка")
+            # print(f"Таргет {target} - метка")
             # return target[2:-2].strip()
             return target
 
         # Адрес ячейки (приводим к верхнему регистру)
         if re.match(r'^[a-zA-Z]+\d+$', target):
-            print(f"Таргет {target} - ячейка")
+            # print(f"Таргет {target} - ячейка")
             return target.upper()
 
-        print(f"Таргет и тип {target, type(target)}")
+        # print(f"Таргет и тип {target, type(target)}")
         return target
 
     def _expand_cell_range(self, start, end):
@@ -227,7 +228,7 @@ class WriteOperator(BaseOperator):
 
         # Для нескольких целей
         if not isinstance(value, (list, tuple)):
-            print("Несколько targets")
+            # print("Несколько targets")
             # Одно значение для всех целей
             for target in targets:
                 self._write_single_target(target, value)
@@ -279,7 +280,7 @@ class WriteOperator(BaseOperator):
             #
             #         return tags_dict[clean_tag]
         except Exception as e:
-            print(e)
+            # print(e)
             print(f"Ошибка при разрешении метки {tag}: {str(e)}")
         return None
 

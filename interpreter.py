@@ -11,6 +11,7 @@ from core.operators.opbr_operator import OpbrOperator
 from core.operators.pic_operator import PicOperator
 from core.operators.result_operator import ResultOperator
 from core.operators.sfon_operator import SfonOperator
+from core.operators.exit_operator import ExitOperator
 from core.operators.target_operator import TargetOperator
 from core.operators.write_operator import WriteOperator
 from core.variable_manager import VariableManager
@@ -73,7 +74,8 @@ class Interpreter:
             'СФОРМИРОВАТЬ_ПРОТОКОЛ': GenerateProtocolOperator(self.variable_manager, self.evaluator),
             'WRITE': WriteOperator(self.variable_manager, self.evaluator),
             'ЗАПИСАТЬ': WriteOperator(self.variable_manager, self.evaluator),
-
+            'EXIT': ExitOperator(self.variable_manager, self.evaluator),
+            'ВЫХОД': ExitOperator(self.variable_manager, self.evaluator)
         }
         self.context_stack = []
         self.current_context = None
@@ -82,6 +84,7 @@ class Interpreter:
 
     def execute_command(self, command):
         command = command.strip()
+
 
         if not command or self.comment_operator.is_comment(command):
             return
@@ -99,115 +102,206 @@ class Interpreter:
             if operator_name == 'TARGET':
                 self.targets.append(len(self.targets))
 
-    def _execute_procedure(self, procedure_code):
-        """Выполняет код процедуры с поддержкой меток до/после переходов"""
-        # Инициализация контекста с обязательными полями
-        context = {
-            'code': procedure_code, # Исходный код процедуры (список строк)
-            'labels': {}, # Словарь меток вида {"имя_метки": номер_строки}
-            'index': 0,  # Текущий номер выполняемой строки (индекс в списке code)
-            'condition_stack': [], # Стек для отслеживания вложенных условий
-            'executed_blocks': set(), # Множество выполненных блоков условий
-            'index_map': {}, # Карта связей: {номер_строки: блок_условия}
-            'condition_blocks': [], # Список всех блоков условий в процедуре
-            'do_while_stack': [],  # Стек для циклов DO-WHILE
-        }
-
-        stack = []
-
-        # Предварительный анализ структуры кода
-        for idx, line in enumerate(procedure_code):
-            line_upper = line.strip().upper()
-
-            # Обработка меток
-            if line_upper.startswith('LABEL '):
-                label_name = line.split(maxsplit=1)[1].strip()
-                context['labels'][label_name] = idx
-
-            # Обработка условий
-            if line_upper.startswith(('IF ', 'ЕСЛИ ')):
-                stack.append({
-                    'type': 'if',
-                    'start': idx,
-                    'elseifs': [],
-                    'else': None,
-                    'end': None
-                })
-            elif line_upper.startswith(('ELSEIF ', 'ИНАЧЕЕСЛИ ')):
-                if stack and stack[-1]['type'] == 'if':
-                    stack[-1]['elseifs'].append(idx)
-            elif line_upper.startswith(('ELSE', 'ИНАЧЕ')):
-                if stack and stack[-1]['type'] == 'if':
-                    stack[-1]['else'] = idx
-            elif line_upper.startswith(('ENDIF', 'КОНЕЦЕСЛИ')):
-                if stack and stack[-1]['type'] == 'if':
-                    block = stack.pop()
-                    block['end'] = idx
-                    context['condition_blocks'].append(block)
-                    context['index_map'].update({
-                        block['start']: block,
-                        **{elseif: block for elseif in block['elseifs']},
-                        block['else']: block if block['else'] else None,
-                        idx: block  # ENDIF
-                    })
-
-        # print(context)
-        # Добавляем контекст в стек
-        self.context_stack.append(context)
-        # print(self.context_stack)
-
-        # Выполнение кода
-        while self.context_stack and context['index'] < len(procedure_code):
-            line = procedure_code[context['index']]
-            self.execute_command(line)
-            context['index'] += 1  # Инкремент индекса
-            # print(context['index'])
-            # print(context['executed_blocks'])
-        self.context_stack.pop()
-
     def execute_script(self, script_lines):
-        """Выполняет скрипт с поддержкой многострочных команд"""
-        index = 0
-        while index < len(script_lines):
-            line = script_lines[index].strip()
-
-            # Пропускаем пустые строки и комментарии
+        """Исполняет скрипт или процедуру с поддержкой контекста условий и многострочных команд"""
+        context = {
+            'code': script_lines,
+            'labels': {},
+            'index': 0,
+            'condition_stack': [],
+            'index_map': {},
+            'condition_blocks': []
+        }
+        # Сбор меток и блоков условий (как раньше)
+        stack = []
+        for idx, line in enumerate(script_lines):
+            up = line.strip().upper()
+            if up.startswith('LABEL '):
+                context['labels'][line.split(maxsplit=1)[1].strip()] = idx
+            if up.startswith(('IF ', 'ЕСЛИ ')):
+                stack.append({'type':'if','start':idx,'elseifs':[],'else':None,'end':None})
+            elif up.startswith(('ELSEIF','ИНАЧЕЕСЛИ')) and stack and stack[-1]['type']=='if':
+                stack[-1]['elseifs'].append(idx)
+            elif up.startswith(('ELSE','ИНАЧЕ')) and stack and stack[-1]['type']=='if':
+                stack[-1]['else'] = idx
+            elif up.startswith(('ENDIF','КОНЕЦЕСЛИ')) and stack and stack[-1]['type']=='if':
+                block = stack.pop()
+                block['end'] = idx
+                context['condition_blocks'].append(block)
+                for point in [block['start'], *block['elseifs'], block['else'], idx]:
+                    if point is not None:
+                        context['index_map'][point] = block
+        # Основной цикл исполнения
+        while context['index'] < len(script_lines):
+            raw = script_lines[context['index']]
+            line = raw.strip()
+            # Пропуск комментариев/пустых
             if not line or self.comment_operator.is_comment(line):
-                index += 1
+                context['index'] += 1
+                continue
+            # Проверка условий (IF/ELSEIF/ELSE/ENDIF)
+            up = line.upper()
+            if up.startswith(('IF ','ЕСЛИ ')):
+                cond = self.evaluator.evaluate(line.split(None,1)[1])
+                block = context['index_map'][context['index']]
+                if cond:
+                    context['condition_stack'].append(block)
+                else:
+                    # пропустить до ELSEIF/ELSE/ENDIF
+                    self._skip_to(block, context)
+                context['index'] +=1
+                continue
+            if up.startswith(('ELSEIF','ИНАЧЕЕСЛИ')):
+                prev = context['condition_stack'][-1]
+                if prev in self.context_stack and not self.evaluator.evaluate(line.split(None,1)[1]):
+                    self._skip_to(prev, context)
+                context['index'] +=1
+                continue
+            if up.startswith(('ELSE','ИНАЧЕ ')):
+                block = context['condition_stack'][-1]
+                # просто выполнить
+                context['index'] += 1
+                continue
+            if up.startswith(('ENDIF','КОНЕЦЕСЛИ')):
+                context['condition_stack'].pop()
+                context['index'] += 1
                 continue
 
-            operator_name = line.split()[0].upper()
-
-            # Проверяем, поддерживает ли оператор многострочный ввод
-            if operator_name in self.operators and self.operators[operator_name].is_multiline_command(line):
-                # Собираем все строки команды
-                command_lines = [line]
-                index += 1
-
-                # Собираем последующие строки с отступом
-                while index < len(script_lines):
-                    next_line = script_lines[index]
-                    # Пропускаем комментарии внутри многострочной команды
-                    stripped_line = next_line.strip()
-                    if not stripped_line or self.comment_operator.is_comment(stripped_line):
-                        index += 1
-                        continue
-                    if next_line.startswith((' ', '\t')) and not self.comment_operator.is_comment(next_line.strip()):
-                        command_lines.append(next_line.rstrip())
-                        index += 1
+            # Многострочные команды
+            op = line.split()[0].upper()
+            if op in self.operators and self.operators[op].is_multiline_command(raw):
+                lines = [raw.rstrip()]
+                context['index'] +=1
+                while context['index'] < len(script_lines):
+                    nxt = script_lines[context['index']]
+                    if nxt.startswith((' ','\t')) and not self.comment_operator.is_comment(nxt.strip()):
+                        lines.append(nxt.rstrip())
+                        context['index'] +=1
                     else:
                         break
+                self.execute_command("\n".join(lines))
+                continue
 
-                full_command = "\n".join(command_lines)
-                self.execute_command(full_command)
-            else:
-                # Обычная однострочная команда
-                self.execute_command(line)
-                index += 1
+            # Одиночная команда
+            self.execute_command(line)
+            context['index'] +=1
 
     def _execute_procedure(self, procedure_code):
-        """Выполняет код процедуры с поддержкой многострочных команд"""
         self.execute_script(procedure_code)
+
+    def _skip_to(self, block, context):
+        # пропустить до конца блока или до альтернативы
+        target = block['elseifs'][0] if block['elseifs'] else block['else'] or block['end']
+        context['index'] = target
+
+    # def _execute_procedure(self, procedure_code):
+    #     """Выполняет код процедуры с поддержкой меток до/после переходов"""
+    #     # Инициализация контекста с обязательными полями
+    #     context = {
+    #         'code': procedure_code, # Исходный код процедуры (список строк)
+    #         'labels': {}, # Словарь меток вида {"имя_метки": номер_строки}
+    #         'index': 0,  # Текущий номер выполняемой строки (индекс в списке code)
+    #         'condition_stack': [], # Стек для отслеживания вложенных условий
+    #         'executed_blocks': set(), # Множество выполненных блоков условий
+    #         'index_map': {}, # Карта связей: {номер_строки: блок_условия}
+    #         'condition_blocks': [], # Список всех блоков условий в процедуре
+    #         'do_while_stack': [],  # Стек для циклов DO-WHILE
+    #     }
+    #
+    #     stack = []
+    #
+    #     # Предварительный анализ структуры кода
+    #     for idx, line in enumerate(procedure_code):
+    #         line_upper = line.strip().upper()
+    #
+    #         # Обработка меток
+    #         if line_upper.startswith('LABEL '):
+    #             label_name = line.split(maxsplit=1)[1].strip()
+    #             context['labels'][label_name] = idx
+    #
+    #         # Обработка условий
+    #         if line_upper.startswith(('IF ', 'ЕСЛИ ')):
+    #             stack.append({
+    #                 'type': 'if',
+    #                 'start': idx,
+    #                 'elseifs': [],
+    #                 'else': None,
+    #                 'end': None
+    #             })
+    #         elif line_upper.startswith(('ELSEIF ', 'ИНАЧЕЕСЛИ ')):
+    #             if stack and stack[-1]['type'] == 'if':
+    #                 stack[-1]['elseifs'].append(idx)
+    #         elif line_upper.startswith(('ELSE', 'ИНАЧЕ')):
+    #             if stack and stack[-1]['type'] == 'if':
+    #                 stack[-1]['else'] = idx
+    #         elif line_upper.startswith(('ENDIF', 'КОНЕЦЕСЛИ')):
+    #             if stack and stack[-1]['type'] == 'if':
+    #                 block = stack.pop()
+    #                 block['end'] = idx
+    #                 context['condition_blocks'].append(block)
+    #                 context['index_map'].update({
+    #                     block['start']: block,
+    #                     **{elseif: block for elseif in block['elseifs']},
+    #                     block['else']: block if block['else'] else None,
+    #                     idx: block  # ENDIF
+    #                 })
+    #
+    #     # print(context)
+    #     # Добавляем контекст в стек
+    #     self.context_stack.append(context)
+    #     # print(self.context_stack)
+    #
+    #     # Выполнение кода
+    #     while self.context_stack and context['index'] < len(procedure_code):
+    #         line = procedure_code[context['index']]
+    #         self.execute_command(line)
+    #         context['index'] += 1  # Инкремент индекса
+    #         # print(context['index'])
+    #         # print(context['executed_blocks'])
+    #     self.context_stack.pop()
+    #
+    # def execute_script(self, script_lines):
+    #     """Выполняет скрипт с поддержкой многострочных команд"""
+    #     index = 0
+    #     while index < len(script_lines):
+    #         line = script_lines[index].strip()
+    #
+    #         # Пропускаем пустые строки и комментарии
+    #         if not line or self.comment_operator.is_comment(line):
+    #             index += 1
+    #             continue
+    #
+    #         operator_name = line.split()[0].upper()
+    #
+    #         # Проверяем, поддерживает ли оператор многострочный ввод
+    #         if operator_name in self.operators and self.operators[operator_name].is_multiline_command(line):
+    #             # Собираем все строки команды
+    #             command_lines = [line]
+    #             index += 1
+    #
+    #             # Собираем последующие строки с отступом
+    #             while index < len(script_lines):
+    #                 next_line = script_lines[index]
+    #                 # Пропускаем комментарии внутри многострочной команды
+    #                 stripped_line = next_line.strip()
+    #                 if not stripped_line or self.comment_operator.is_comment(stripped_line):
+    #                     index += 1
+    #                     continue
+    #                 if next_line.startswith((' ', '\t')) and not self.comment_operator.is_comment(next_line.strip()):
+    #                     command_lines.append(next_line.rstrip())
+    #                     index += 1
+    #                 else:
+    #                     break
+    #
+    #             full_command = "\n".join(command_lines)
+    #             self.execute_command(full_command)
+    #         else:
+    #             # Обычная однострочная команда
+    #             print(line)
+    #             self.execute_command(line)
+    #             index += 1
+
+
 
     def get_variables(self):
         return self.variable_manager.get_all_variables()
@@ -291,4 +385,5 @@ if __name__ == "__main__":
         script_lines = f.readlines()
 
     interpreter.execute_script(script_lines)
+    print(interpreter.variable_manager.get_all_variables())
     # print(interpreter.get_variables())

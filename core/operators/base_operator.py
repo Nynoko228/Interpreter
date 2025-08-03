@@ -47,9 +47,9 @@ class BaseOperator(ABC):
 
     def _replace_variables(self, text):
         def replacer(match):
-            print(f"match: {match}")
+            # print(f"match: {match}")
             var_name = match.group(1)
-            print(f"var_name: {var_name}")
+            # print(f"var_name: {var_name}")
             try:
                 var_value = str(self.vm.get_variable(var_name)[1])
                 return var_value
@@ -79,8 +79,8 @@ class BaseOperator(ABC):
                 formatted_lines.append(stripped_line)
 
             # Подставляем значения переменных
-            print(f"Подставляем")
-            print(formatted_lines)
+            # print(f"Подставляем")
+            # print(formatted_lines)
             formatted_lines[-1] = self._replace_variables(formatted_lines[-1])
 
         return '\n'.join(formatted_lines)

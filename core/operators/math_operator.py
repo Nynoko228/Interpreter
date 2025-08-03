@@ -18,7 +18,7 @@ class MathOperator(BaseOperator):
         var_name, expression = parts
         self._process_expression(var_name, expression)
         # print(type(self.vm.variables[var_name][-1]))
-        print(self.vm.variables)
+        # print(self.vm.variables)
         # print(self.vm.variables[var_name][-1])
 
     def _process_expression(self, var_name, expression):
