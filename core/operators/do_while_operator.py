@@ -12,11 +12,19 @@ class DoWhileOperator(BaseOperator):
         context = self.interpreter.get_current_context()
 
         if operator_name == 'DO' or operator_name == 'ДЕЛАТЬ':
-            # Запоминаем начало цикла
-            context.setdefault('do_while_stack', []).append({
-                'start_index': context['index'],
-                'condition': None
-            })
+            stack = context.setdefault('do_while_stack', [])
+
+            # Запоминаем следующую строку после DO
+            current_loop_exists = any(
+                loop['start_index'] == context['index'] + 1
+                for loop in stack
+            )
+
+            if not current_loop_exists:
+                stack.append({
+                    'start_index': context['index'] + 1,  # Следующая строка после DO
+                    'condition': None
+                })
 
         elif operator_name == 'WHILE' or operator_name == 'ПОКА':
             if not context.get('do_while_stack'):
@@ -26,8 +34,7 @@ class DoWhileOperator(BaseOperator):
             condition = re.sub(r'^(WHILE|ПОКА)\s+', '', command, flags=re.IGNORECASE).strip()
             result = self.evaluator.evaluate(condition)
 
-            # Если условие истинно, возвращаемся к началу цикла
             if result:
-                context['index'] = current_loop['start_index'] - 1  # -1 компенсирует инкремент
+                context['index'] = current_loop['start_index']  # Переход к телу цикла
             else:
-                context['do_while_stack'].pop()  # Удаляем завершенный цикл
+                context['do_while_stack'].pop()

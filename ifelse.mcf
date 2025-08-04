@@ -1,0 +1,26 @@
+MEMI Ввод MEM
+IF          MEM > 0
+MEMI        Ввод cnt
+MATH        cnt = MEM
+IF          cnt > 0
+DISP        Оба больше
+ELSEIF cnt == 0
+DISP cnt равен 0
+ELSE
+DISP        cnt меньше
+ENDIF
+ELSEIF MEM == 0
+DISP MEM равен 0
+MEMI        Ввод cnt
+MATH        cnt = MEM
+IF          cnt > 0
+DISP        cnt больше, а MEM равен
+ELSEIF cnt == 0
+DISP cnt и MEM равен 0
+ELSE
+DISP        cnt меньше
+ENDIF
+ELSE
+DISP MEM < 0
+ENDIF
+DISP        конец

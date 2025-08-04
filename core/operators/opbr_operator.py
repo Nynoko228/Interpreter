@@ -43,8 +43,19 @@ class OpbrOperator(BaseOperator):
 
         root = tk.Tk()
         root.title("Подтверждение")
-        root.geometry("500x200")
         root.resizable(False, False)
+        # Установка фиксированного размера окна
+        window_width = 500
+        window_height = 250
+
+        # Вычисление координат для центрирования
+        screen_width = root.winfo_screenwidth()
+        screen_height = root.winfo_screenheight()
+        x = (screen_width - window_width) // 2
+        y = (screen_height - window_height) // 2
+
+        # Применение геометрии с центрированием
+        root.geometry(f"{window_width}x{window_height}+{x}+{y}")
         root.attributes("-topmost", True)
         root.lift()
         root.focus_force()

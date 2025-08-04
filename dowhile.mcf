@@ -1,0 +1,10 @@
+MEMI цикл 1
+DO
+MATH cnt = 3
+DISP MEM: {MEM}
+DO
+DISP cnt: {cnt}
+MATH cnt = cnt - 1
+WHILE cnt > 0
+MATH MEM = MEM - 1
+WHILE MEM > 0

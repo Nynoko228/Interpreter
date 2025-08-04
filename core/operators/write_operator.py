@@ -204,7 +204,8 @@ class WriteOperator(BaseOperator):
         col_end = column_index_from_string(end_col)
 
         # Получаем главные ячейки в диапазоне
-        base_cells = self.vm.protocol.get_merged_range_base_cells(
+        base_cells = get_base_cells_in_range(
+            self.vm.protocol.worksheet,
             min(start_row, end_row),
             min(col_start, col_end),
             max(start_row, end_row),
@@ -229,7 +230,8 @@ class WriteOperator(BaseOperator):
         end_row, end_col = end_coords
 
         # Получаем главные ячейки в диапазоне
-        base_cells = self.vm.protocol.get_merged_range_base_cells(
+        base_cells = get_base_cells_in_range(
+            self.vm.protocol.worksheet,
             min(start_row, end_row),
             min(start_col, end_col),
             max(start_row, end_row),

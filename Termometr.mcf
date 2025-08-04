@@ -1,4 +1,4 @@
-LOAD_PROTOCOL C:\Users\Alexander\PycharmProjects\Interpreter\Protocol poverki\Testiruem\Копия_Термометр_стеклянный_(1)_редактированный — копия.xlsx
+LOAD_PROTOCOL C:\MeMorozov\Interpreter\Protocol poverki\Testiruem\Копия_Термометр_стеклянный_(1)_редактированный — копия.xlsx
 MEM2 Введите тип (модель) средства измерений
 MATH type = MEM2
 MEM2 Введите заводской номер
@@ -13,18 +13,24 @@ MEMI Введите нижний предел измерения в °С
 MATH predel_niz = MEM
 MEMI Введите верхний предел измерения в °С
 MATH predel_verx = MEM
+MEMI Введите цену деления шкалы
+MATH division = MEM
 MEM2 Введите принадлежность средства измерения (Цех)
 MATH department = MEM2
 MEMI Введите температуру окружающего воздуха в °С
 ЕСЛИ  MEM > 25 || MEM < 15
+DISP Температура окружающего воздуха должна быть в переделах от 15 до 25 °С
 ВЫХОД
 КОНЕЦЕСЛИ
 MATH temp = MEM
 MEMI Введите количество целых часов перед проверкой/калибровкой
 ЕСЛИ  MEM < 24
+DISP Выдержка не менее 24 часов
 ВЫХОД
 КОНЕЦЕСЛИ
 MATH time = MEM
+MEMI Введите погрешность поверяемого термометра в %
+MATH inaccuracy = MEM
 OPBR Вы используете ГОСТ 8.279-78 "Государственная система обеспечения единства измерений. Термометры стеклянные жидкостные рабочие. Методика поверки"?
 IF MEM == 0
 DISP Используйте корректный ГОСТ
@@ -34,4 +40,46 @@ MEM2 Укажите средства измерения, используемы�
 MATH si = MEM2
 OPBR Внешний осмотр соответствует пунтку 5.1?
 IF MEM == 0
-WRITE [type, number, year, interval, last_calib, "{predel_niz}...{predel_verx}", department, temp, time, si] -> []
+WRITE [type, number, year, interval, last_calib, "{predel_niz}...{predel_verx}", division, department, temp, time, si] -> [{{DEVICE_TYPE}}:{{MANUFACTURE_YEAR}}, AL8:AL11, AZ13, {{AIR_TEMPERATURE}}, {{TIME}}, AL22]
+EVAL -> {{EXTERNAL_INSPECTION}}
+EVAL -> J38
+GENERATE_PROTOCOL C:\MeMorozov\Interpreter\Protocol poverki\Testiruem\Копия_Термометр_стеклянный_(1)_редактированный — копия(2).xlsx
+EXIT
+ENDIF
+EVAL -> {{EXTERNAL_INSPECTION}}
+#Тут должно быть определение метрологических характеристик СИ
+MEMI Введите количество действительных температур
+MATH cnt1 = MEM
+MATH dopusk_pogresh = predel_verx * inaccuracy / 100
+MATH lst = []
+MATH Flag = 1
+DO
+MEMI Введите действительную температуру
+MATH lst = lst + [MEM]
+MATH deist_t = MEM
+MATH cnt2 = 0
+MATH summa = 0
+DO
+MATH cnt2 = cnt2 + 1
+MEMI Введите значение в калибруемой отметке с номером {cnt2}
+MATH summa = summa + MEM
+MATH lst = lst + [MEM]
+WHILE cnt2 < 5
+MATH avg = summa / 5
+MATH lst = lst + [avg]
+MATH pogresh_real = abs(avg - deist_t)
+MATH lst = lst + [pogresh_real]
+MATH lst = lst + [dopusk_pogresh]
+IF pogresh_real > dopusk_pogresh
+MATH Flag = 0
+ENDIF
+MATH cnt1 = cnt1 - 1
+WHILE cnt1 > 0
+WRITE [type, number, year, interval, last_calib, "{predel_niz}...{predel_verx}", division, department, temp, time, si] -> [{{DEVICE_TYPE}}:{{MANUFACTURE_YEAR}}, AL8:AL11, AZ13, {{AIR_TEMPERATURE}}, {{TIME}}, AL22]
+WRITE lst -> {{MEASUREMENTS_START}}:{{MEASUREMENTS_END}}
+MATH MEM = Flag
+EVAL -> {{ASSESSMENT}}
+EVAL -> {{CONCLUSION}}
+GENERATE_PROTOCOL C:\MeMorozov\Interpreter\Protocol poverki\Testiruem\Копия_Термометр_стеклянный_(1)_редактированный — копия(2).xlsx
+
+

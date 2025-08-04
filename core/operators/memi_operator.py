@@ -55,9 +55,20 @@ class MemiOperator(BaseOperator):
         # Окно
         root = tk.Tk()
         root.title("Ввод числа")
-        root.geometry("500x250")
         root.resizable(False, False)
         root.attributes('-topmost', True)
+        # Установка фиксированного размера окна
+        window_width = 500
+        window_height = 250
+
+        # Вычисление координат для центрирования
+        screen_width = root.winfo_screenwidth()
+        screen_height = root.winfo_screenheight()
+        x = (screen_width - window_width) // 2
+        y = (screen_height - window_height) // 2
+
+        # Применение геометрии с центрированием
+        root.geometry(f"{window_width}x{window_height}+{x}+{y}")
         root.lift()
         root.focus_force()
 
@@ -70,7 +81,7 @@ class MemiOperator(BaseOperator):
         label.pack()
 
         # Поле ввода
-        entry = tk.Entry(root, font=("Arial", 14), justify="center", width=20)
+        entry = tk.Entry(root, font=("Arial", 14), justify="center", width=40)
         entry.pack(pady=10)
         entry.focus_set()
 

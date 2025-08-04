@@ -37,15 +37,6 @@ class ProtocolGenerator:
                 return merged_range.min_row, merged_range.min_col
         return row, col
 
-    def get_merged_range_base_cells(self, start_row, start_col, end_row, end_col):
-        """Возвращает только главные ячейки в указанном диапазоне"""
-        base_cells = set()
-        for row in range(start_row, end_row + 1):
-            for col in range(start_col, end_col + 1):
-                base_row, base_col = self.get_base_cell(self._ws, row, col)
-                base_cells.add((base_row, base_col))
-        return sorted(base_cells)
-
     def generate(self, output_path):
         """Генерирует протокол с учетом всех замен"""
         if not self.template_path:
@@ -96,6 +87,12 @@ class ProtocolGenerator:
                     except Exception as e:
                         print(f"Ошибка при обработке метки '{tag}' в ячейку {get_column_letter(col)}{row}: {str(e)}")
                         print(f"Значение '{values[0]}' не было записано для метки '{tag}'")
+
+        for row in ws.iter_rows():
+            for cell in row:
+                if cell.value is not None and isinstance(cell.value, str):
+                    # Удаляем все вхождения {{...}} из текста ячейки
+                    cell.value = re.sub(r'\{\{[^}]*\}\}', '', cell.value)
 
         try:
             wb.save(output_path)

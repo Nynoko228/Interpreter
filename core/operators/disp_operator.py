@@ -25,7 +25,18 @@ class DispOperator(BaseOperator):
     def show_message_box(self, message):
         root = tk.Tk()
         root.title("Сообщение от DISP")
-        root.geometry("500x250")
+        # Установка фиксированного размера окна
+        window_width = 500
+        window_height = 250
+
+        # Вычисление координат для центрирования
+        screen_width = root.winfo_screenwidth()
+        screen_height = root.winfo_screenheight()
+        x = (screen_width - window_width) // 2
+        y = (screen_height - window_height) // 2
+
+        # Применение геометрии с центрированием
+        root.geometry(f"{window_width}x{window_height}+{x}+{y}")  # Изменено!
         root.resizable(False, False)
 
         # Установка окна поверх всех

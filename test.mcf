@@ -1,9 +1,17 @@
-LOAD_PROTOCOL C:\Users\Alexander\PycharmProjects\Interpreter\Protocol poverki\Testiruem\Копия_Термометр_стеклянный_(1)_редактированный — копия.xlsx
-MATH start = 0
-MATH end = 5
-MATH dev = "sdsdsd"
-WRITE [dev, "{start}...{end}", dev, start] -> [AL4:AL6, AL7]
-GENERATE_PROTOCOL C:\Users\Alexander\PycharmProjects\Interpreter\Protocol poverki\Testiruem\Копия_Термометр_стеклянный_(1)_редактированный — копия(2).xlsx
+#LOAD_PROTOCOL C:\MeMorozov\Interpreter\Protocol poverki\Testiruem\Копия_Термометр_стеклянный_(1)_редактированный — копия.xlsx
+#OPBR Точно да?
+#MEMI Введите верхний предел измерения в °С
+#MATH predel_verx = MEM
+#MEMI Введите погрешность поверяемого термометра в %
+#MATH inaccuracy = MEM
+#MATH dopusk_pogresh = predel_verx * inaccuracy / 100
+#DISP Допуск {dopusk_pogresh}
+#EVAL -> {{EXTERNAL_INSPECTION}}
+#EVAL -> J38
+#TABLE ['Действительная температура', 'Отметка 1', 'Отметка 2', 'Отметка 3', 'Отметка 4', 'Отметка 5', 'Среднеарифметическое', 'Погрешность калибруемого термометра, °С', 'Допустимая погрешность калибруемого термометра, °С'] ['INPUT', 'INPUT', 'INPUT', 'INPUT', 'INPUT', 'INPUT', '=СРЗНАЧ(A2:A6)']
+#WRITE [dev, "{start}...{end}", dev, start, 0, 1, 2] -> [AL4:AL6, AL8:AL11]
+WRITE lst -> [AL4:AL8]
+GENERATE_PROTOCOL C:\MeMorozov\Interpreter\Protocol poverki\Testiruem\Копия_Термометр_стеклянный_(1)_редактированный — копия(2).xlsx
 
 #OPBR Вы используете ГОСТ 8.279-78 "Государственная система обеспечения единства измерений. Термометры стеклянные жидкостные рабочие. Методика поверки"?
 #IF MEM == 0

@@ -92,9 +92,9 @@ class IfOperator(BaseOperator):
         next_positions = [p for p in next_positions if p is not None and p > context['index']]
 
         if next_positions:
-            context['index'] = min(next_positions) - 1  # -1 т.к. индекс увеличится после выполнения
+            context['index'] = min(next_positions)  # Убираем -1
 
     def _skip_to_endif(self, context, block):
         """Пропускает код до конца условия"""
         if block and block['end'] is not None:
-            context['index'] = block['end'] - 1  # -1 для компенсации инкремента
+            context['index'] = block['end']  # Убираем -1
