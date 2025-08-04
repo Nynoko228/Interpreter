@@ -38,18 +38,25 @@ class VariableManager:
         return self.variables[var_name]
 
     def set_variable(self, name, var_type, value):
+        print(f"ДО: {self.variables}")
         var_name = name # Сделаем регистрозависимым
         # var_name = name.upper()
 
         if not re.match(r'^[a-zA-Zа-яА-Я_][a-zA-Z0-9а-яА-Я_]*$', var_name):
             raise NameError(f"Некорректное имя переменной: {var_name}")
 
-        if var_name in self.variables:
+        if var_name in ['MEM', 'MEM2']:
             existing_type = self.variables[var_name][0]
             if existing_type != var_type:
                 raise TypeError(f"Нельзя изменить тип переменной {var_name}")
 
+        # if var_name in self.variables:
+        #     existing_type = self.variables[var_name][0]
+        #     if existing_type != var_type:
+        #         raise TypeError(f"Нельзя изменить тип переменной {var_name}")
+
         self.variables[var_name] = (var_type, value)
+        print(f"ПОСЛЕ: {self.variables}")
         # print(self.variables)
 
     def get_all_variables(self):

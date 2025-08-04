@@ -93,6 +93,12 @@ class OpbrOperator(BaseOperator):
         yes_btn.pack(side="left", padx=30)
         no_btn.pack(side="right", padx=30)
 
+        # Биндим Enter на первую кнопку
+        root.bind("<Return>", lambda event: yes_btn.invoke())
+
+        # Биндим Esc на вторую кнопку
+        root.bind("<Escape>", lambda event: no_btn.invoke())
+
         root.mainloop()
         return result["value"]
 

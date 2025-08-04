@@ -1,8 +1,11 @@
 import os
 import re
+import sys
 import tempfile
 import shutil
 from io import BytesIO
+import tkinter as tk
+from tkinter import messagebox
 
 from openpyxl.reader.excel import load_workbook
 
@@ -18,7 +21,13 @@ class LoadProtocolOperator(BaseOperator):
 
         # Проверяем существование файла
         if not os.path.exists(file_path):
-            raise FileNotFoundError(f"Файл протокола не найден: {file_path}")
+            root = tk.Tk()
+            root.withdraw()
+            messagebox.showerror("Ошибка", f"Не удалось загрузить протокол")
+            root.destroy()
+            # Завершаем программу с кодом ошибки
+            sys.exit(1)
+
 
         wb = load_workbook(file_path)
         ws = wb.active

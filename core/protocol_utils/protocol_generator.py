@@ -1,5 +1,9 @@
+import sys
+
 from openpyxl import load_workbook
 import re
+import tkinter as tk
+from tkinter import messagebox
 from collections import defaultdict
 from openpyxl.utils import get_column_letter
 
@@ -95,10 +99,21 @@ class ProtocolGenerator:
                     cell.value = re.sub(r'\{\{[^}]*\}\}', '', cell.value)
 
         try:
+            ws.protection.sheet = True
+            ws.protection.password = "my_password"
             wb.save(output_path)
-            print("Файл успешно сохранен:", output_path)
+            root = tk.Tk()
+            root.withdraw()
+            messagebox.showinfo("Успех", f"Протокол успешно сохранён:\n{output_path}")
+            root.destroy()
+            return output_path
         except Exception as e:
-            print("Критическая ошибка при сохранении файла:", str(e))
+            root = tk.Tk()
+            root.withdraw()
+            messagebox.showerror("Ошибка", f"Не удалось сохранить протокол:\n{e}")
+            root.destroy()
+            # Завершаем программу с кодом ошибки
+            sys.exit(1)
 
     def _column_index(self, col_letter):
         """Конвертирует букву столбца в номер"""

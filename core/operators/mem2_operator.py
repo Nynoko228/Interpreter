@@ -106,6 +106,12 @@ class Mem2Operator(BaseOperator):
         submit_btn.pack(side="left", padx=20)
         quit_btn.pack(side="right", padx=20)
 
+        # Биндим Enter на первую кнопку
+        root.bind("<Return>", lambda event: submit_btn.invoke())
+
+        # Биндим Esc на вторую кнопку
+        root.bind("<Escape>", lambda event: on_quit())
+
         root.mainloop()
 
         return result["value"]

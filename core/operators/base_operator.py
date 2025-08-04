@@ -46,18 +46,59 @@ class BaseOperator(ABC):
         return '\n'.join(cleaned_lines)
 
     def _replace_variables(self, text):
+        # Шаблон: {имя[цифра]} или просто {имя}
+        pattern = re.compile(
+            r'\{'
+            r'([A-Za-zА-Яа-я_][A-Za-zА-Яа-я0-9_]*)'  # группа 1: имя переменной
+            r'(?:\[(\d+)\])?'  # группа 2 (необязательная): индекс
+            r'\}'
+        )
+
         def replacer(match):
             var_name = match.group(1)
+            idx = match.group(2)
+
             try:
                 _, value = self.vm.get_variable(var_name)
-                # Проверяем тип
-                if isinstance(value, float) and not value.is_integer():
-                    return str(value).replace('.', ',')
-                return str(value)
             except NameError:
-                return match.group(0)  # Оставляем как есть, если переменная не найдена
+                return match.group(0)
 
-        return re.sub(r'\{([a-zA-Zа-яА-Я_]+[a-zA-Zа-яА-Я0-9_]*)\}', replacer, text)
+            # Если индекс присутствует, пробуем к индексированию
+            if idx is not None:
+                try:
+                    index = int(idx)
+                    # Если это список или кортеж — берём по номеру
+                    if isinstance(value, (list, tuple)):
+                        value = value[index]
+                    # Если это словарь — тоже можно взять по ключу-строке
+                    elif isinstance(value, dict):
+                        value = value[index] if index in value else value.get(str(index), match.group(0))
+                    else:
+                        # нечего индексировать — возвращаем исходник
+                        return match.group(0)
+                except (IndexError, ValueError, KeyError):
+                    return match.group(0)
+
+            # Приводим значение к строке, подставляем запятую для дробей
+            if isinstance(value, float) and not value.is_integer():
+                return str(value).replace('.', ',')
+            return str(value)
+
+        return pattern.sub(replacer, text)
+
+    # def _replace_variables(self, text):
+    #     def replacer(match):
+    #         var_name = match.group(1)
+    #         print(var_name)
+    #         try:
+    #             _, value = self.vm.get_variable(var_name)
+    #             # Проверяем тип
+    #             if isinstance(value, float) and not value.is_integer():
+    #                 return str(value).replace('.', ',')
+    #             return str(value)
+    #         except NameError:
+    #             return match.group(0)  # Оставляем как есть, если переменная не найдена
+    #     return re.sub(r'\{([a-zA-Zа-яА-Я_]+[a-zA-Zа-яА-Я0-9_]*)\}', replacer, text)
 
     def _format_message(self, message):
         lines = message.split('\n')

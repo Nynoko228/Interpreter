@@ -96,6 +96,12 @@ class DispOperator(BaseOperator):
         continue_button.pack(side="left", padx=20)
         quit_button.pack(side="right", padx=20)
 
+        # Биндим Enter на первую кнопку
+        root.bind("<Return>", lambda event: continue_button.invoke())
+
+        # Биндим Esc на вторую кнопку
+        root.bind("<Escape>", lambda event: on_quit())
+
         root.mainloop()
 
 

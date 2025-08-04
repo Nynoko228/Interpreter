@@ -1,4 +1,4 @@
-LOAD_PROTOCOL C:\MeMorozov\Interpreter\Protocol poverki\Testiruem\Копия_Термометр_стеклянный_(1)_редактированный — копия.xlsx
+LOAD_PROTOCOL C:\Users\RZR\PycharmProjects\Interpreter\Protocol poverki\Testiruem\Копия_Термометр_стеклянный_(1)_редактированный — копия.xlsx
 MEM2 Введите тип (модель) средства измерений
 MATH type = MEM2
 MEM2 Введите заводской номер
@@ -43,7 +43,7 @@ IF MEM == 0
 WRITE [type, number, year, interval, last_calib, "{predel_niz}...{predel_verx}", division, department, temp, time, si] -> [{{DEVICE_TYPE}}:{{MANUFACTURE_YEAR}}, AL8:AL11, AZ13, {{AIR_TEMPERATURE}}, {{TIME}}, AL22]
 EVAL -> {{EXTERNAL_INSPECTION}}
 EVAL -> J38
-GENERATE_PROTOCOL C:\MeMorozov\Interpreter\Protocol poverki\Testiruem\Копия_Термометр_стеклянный_(1)_редактированный — копия(2).xlsx
+GENERATE_PROTOCOL C:\Users\RZR\PycharmProjects\Interpreter\Protocol poverki\Testiruem\Копия_Термометр_стеклянный_(1)_редактированный — копия(2).xlsx
 EXIT
 ENDIF
 EVAL -> {{EXTERNAL_INSPECTION}}
@@ -80,6 +80,8 @@ WRITE lst -> {{MEASUREMENTS_START}}:{{MEASUREMENTS_END}}
 MATH MEM = Flag
 EVAL -> {{ASSESSMENT}}
 EVAL -> {{CONCLUSION}}
-GENERATE_PROTOCOL C:\MeMorozov\Interpreter\Protocol poverki\Testiruem\Копия_Термометр_стеклянный_(1)_редактированный — копия(2).xlsx
+ВРЕМЯ
+WRITE MEM2 -> {{DATE}}
+GENERATE_PROTOCOL C:\Users\RZR\PycharmProjects\Interpreter\Protocol poverki\Testiruem\Копия_Термометр_стеклянный_(1)_редактированный — копия(2).xlsx
 
 

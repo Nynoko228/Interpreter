@@ -25,6 +25,7 @@ from core.operators.mem2_operator import Mem2Operator
 from core.operators.call_operator import CallOperator
 from core.operators.table_operator import TableOperator
 from core.operators.load_protocol_operator import LoadProtocolOperator
+from core.operators.time_operator import TimeOperator
 import sys
 
 class Interpreter:
@@ -78,7 +79,9 @@ class Interpreter:
             'EXIT': ExitOperator(self.variable_manager, self.evaluator),
             'ВЫХОД': ExitOperator(self.variable_manager, self.evaluator),
             'TABLE': TableOperator(self.variable_manager, self.evaluator),
-            'ТАБЛИЦА': TableOperator(self.variable_manager, self.evaluator)
+            'ТАБЛИЦА': TableOperator(self.variable_manager, self.evaluator),
+            'TIME': TimeOperator(self.variable_manager, self.evaluator),
+            'ВРЕМЯ': TimeOperator(self.variable_manager, self.evaluator),
         }
         self.context_stack = []
         self.current_context = None
