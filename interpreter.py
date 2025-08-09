@@ -26,6 +26,7 @@ from core.operators.call_operator import CallOperator
 from core.operators.table_operator import TableOperator
 from core.operators.load_protocol_operator import LoadProtocolOperator
 from core.operators.time_operator import TimeOperator
+# from core.operators.calendar_operator import CalendarOperator
 import sys
 
 class Interpreter:
@@ -82,6 +83,8 @@ class Interpreter:
             'ТАБЛИЦА': TableOperator(self.variable_manager, self.evaluator),
             'TIME': TimeOperator(self.variable_manager, self.evaluator),
             'ВРЕМЯ': TimeOperator(self.variable_manager, self.evaluator),
+            # 'CALENDAR': CalendarOperator(self.variable_manager, self.evaluator),
+            # 'КАЛЕНДАРЬ': CalendarOperator(self.variable_manager, self.evaluator),
         }
         self.context_stack = []
         self.current_context = None

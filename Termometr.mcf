@@ -1,4 +1,4 @@
-LOAD_PROTOCOL C:\Users\RZR\PycharmProjects\Interpreter\Protocol poverki\Testiruem\Копия_Термометр_стеклянный_(1)_редактированный — копия.xlsx
+LOAD_PROTOCOL C:\MeMorozov\Interpreter\Protocol poverki\Testiruem\Копия_Термометр_стеклянный_(1)_редактированный — копия.xlsx
 MEM2 Введите тип (модель) средства измерений
 MATH type = MEM2
 MEM2 Введите заводской номер
@@ -9,10 +9,15 @@ MEMI Введите интервал между калибровками, мес
 MATH interval = MEM
 MEM2 Введите дату предыдущей калибровки
 MATH last_calib = MEM2
+LABEL a
 MEMI Введите нижний предел измерения в °С
 MATH predel_niz = MEM
 MEMI Введите верхний предел измерения в °С
 MATH predel_verx = MEM
+IF predel_verx <= predel_niz
+DISP Верхний предел должен быть строго больше чем нижний
+LJUMP a
+ENDIF
 MEMI Введите цену деления шкалы
 MATH division = MEM
 MEM2 Введите принадлежность средства измерения (Цех)
@@ -43,12 +48,15 @@ IF MEM == 0
 WRITE [type, number, year, interval, last_calib, "{predel_niz}...{predel_verx}", division, department, temp, time, si] -> [{{DEVICE_TYPE}}:{{MANUFACTURE_YEAR}}, AL8:AL11, AZ13, {{AIR_TEMPERATURE}}, {{TIME}}, AL22]
 EVAL -> {{EXTERNAL_INSPECTION}}
 EVAL -> J38
-GENERATE_PROTOCOL C:\Users\RZR\PycharmProjects\Interpreter\Protocol poverki\Testiruem\Копия_Термометр_стеклянный_(1)_редактированный — копия(2).xlsx
+GENERATE_PROTOCOL C:\MeMorozov\Interpreter\Protocol poverki\Testiruem\Копия_Термометр_стеклянный_(1)_редактированный — копия(2).xlsx
 EXIT
 ENDIF
 EVAL -> {{EXTERNAL_INSPECTION}}
 #Тут должно быть определение метрологических характеристик СИ
+DO
 MEMI Введите количество действительных температур
+    (число от 1 до 6)
+WHILE MEM < 1 || MEM > 6
 MATH cnt1 = MEM
 MATH dopusk_pogresh = predel_verx * inaccuracy / 100
 MATH lst = []
@@ -82,6 +90,6 @@ EVAL -> {{ASSESSMENT}}
 EVAL -> {{CONCLUSION}}
 ВРЕМЯ
 WRITE MEM2 -> {{DATE}}
-GENERATE_PROTOCOL C:\Users\RZR\PycharmProjects\Interpreter\Protocol poverki\Testiruem\Копия_Термометр_стеклянный_(1)_редактированный — копия(2).xlsx
+GENERATE_PROTOCOL C:\MeMorozov\Interpreter\Protocol poverki\Testiruem\Копия_Термометр_стеклянный_(1)_редактированный — копия(2).xlsx
 
 

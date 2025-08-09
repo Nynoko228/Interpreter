@@ -1,3 +1,4 @@
+DISP cnt в ifelse.mcf: {cnt}
 MEMI Ввод MEM
 IF          MEM > 0
 MEMI        Ввод cnt

@@ -1,5 +1,8 @@
 import re
 import ast
+import sys
+import tkinter as tk
+from tkinter import messagebox
 from .base_operator import BaseOperator
 from openpyxl.utils import get_column_letter, column_index_from_string
 from core.protocol_utils.protocol_utils import get_base_cells_in_range
@@ -25,7 +28,15 @@ class WriteOperator(BaseOperator):
         # Определение целей
         # print(target_part)
         # print(type(target_part))
-        targets = self._parse_targets(target_part)
+        try:
+            targets = self._parse_targets(target_part)
+        except Exception as e:
+            root = tk.Tk()
+            root.withdraw()
+            messagebox.showerror("Ошибка", f"Не удалось получить метки в протоколе, возможно вы не открыли его командой 'ЗАГРУЗИТЬ_ПРОТОКОЛ':\n{e}")
+            root.destroy()
+            # Завершаем программу с кодом ошибки
+            sys.exit(1)
         # print(f"targets в write_operator: {targets}")
         # print(type(targets))
         # print(type(value), type(targets))

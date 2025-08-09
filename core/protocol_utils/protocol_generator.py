@@ -1,5 +1,7 @@
 import sys
 
+import secrets
+import string
 from openpyxl import load_workbook
 import re
 import tkinter as tk
@@ -40,6 +42,26 @@ class ProtocolGenerator:
                     merged_range.min_col <= col <= merged_range.max_col):
                 return merged_range.min_row, merged_range.min_col
         return row, col
+
+    def generate_secure_password(self):
+        """Криптографически безопасная генерация пароля"""
+        uppercase = string.ascii_uppercase
+        lowercase = string.ascii_lowercase
+        digits = string.digits
+        symbols = '!@#$%^&*()_+-=[]{}|;:,.<>?'
+        all_chars = uppercase + lowercase + digits + symbols
+
+        password = [
+            secrets.choice(uppercase),
+            secrets.choice(lowercase),
+            secrets.choice(digits),
+            secrets.choice(symbols)
+        ]
+
+        password += [secrets.choice(all_chars) for _ in range(12)]
+        secrets.SystemRandom().shuffle(password)
+
+        return ''.join(password)
 
     def generate(self, output_path):
         """Генерирует протокол с учетом всех замен"""
@@ -100,7 +122,7 @@ class ProtocolGenerator:
 
         try:
             ws.protection.sheet = True
-            ws.protection.password = "my_password"
+            ws.protection.password = self.generate_secure_password()
             wb.save(output_path)
             root = tk.Tk()
             root.withdraw()
