@@ -11,7 +11,6 @@ class GenerateProtocolOperator(BaseOperator):
 
         # Генерируем протокол
         self.vm.protocol.generate(path_match)
-        pr
         # Выводим результат
         # print(f"Финальный протокол сгенерирован: {output_path}")
         # return output_path
