@@ -7,16 +7,39 @@
     <link rel="stylesheet" href="style.css">
 </head>
 <body>
-    <div class="editor-container">
-        <div class="line-numbers">
-            <div class="line-number">1</div>
+    <div class="main-container">
+        <div class="activity-bar">
+            <div class="activity-bar-content">
+                <button class="activity-btn" id="files-btn" title="Файлы">
+                    <img src="svg/files.svg" alt="Файлы">
+                </button>
+                <button class="activity-btn" id="book-btn" title="Справка">
+                    <img src="svg/book.svg" alt="Справка">
+                </button>
+            </div>
         </div>
-        <!-- Добавляем элемент для подсветки активной строки -->
-        <div id="active-line-highlighter"></div>
-        <textarea id="code-editor" spellcheck="false"></textarea>
+
+        <div class="side-panel" id="side-panel">
+            <div class="panel-content" id="panel-content">
+                <!-- Контент будет добавляться динамически -->
+            </div>
+        </div>
+
+        <div class="editor-container">
+            <div class="line-numbers-container">
+                <div class="line-numbers">
+                    <div class="line-number">1</div>
+                </div>
+            </div>
+            <div id="active-line-highlighter"></div>
+            <textarea id="code-editor" spellcheck="false"></textarea>
+        </div>
     </div>
     <div class="status-bar" id="status-bar">Готов</div>
+    <div id="autocomplete-container"></div>
 
+    <!-- Подключаем файлы в правильном порядке -->
+    <script src="lsp.js"></script>
     <script src="main.js"></script>
 </body>
 </html>

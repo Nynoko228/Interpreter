@@ -1,4 +1,4 @@
-/* Добавим новые стили для подсветки активной строки */
+/* Добавим новые стили для activity bar и подсветки активной строки */
 * {
     margin: 0;
     padding: 0;
@@ -14,6 +14,60 @@ body {
     flex-direction: column;
 }
 
+.main-container {
+    flex: 1;
+    display: flex;
+    overflow: hidden;
+}
+
+.activity-bar {
+    width: 50px;
+    background-color: #333333;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding-top: 10px;
+    border-right: 1px solid #454545;
+    transition: width 0.2s ease;
+    z-index: 4;
+}
+
+.activity-bar-content {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+}
+
+.activity-btn {
+    background: none;
+    border: none;
+    padding: 8px;
+    cursor: pointer;
+    border-radius: 4px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.activity-btn:hover {
+    background-color: #2a2d2e;
+}
+
+.activity-btn.active {
+    background-color: #094771;
+}
+
+.activity-btn img {
+    width: 24px;
+    height: 24px;
+    filter: invert(0.6);
+}
+
+.activity-btn.active img,
+.activity-btn:hover img {
+    filter: invert(1);
+}
+
 .editor-container {
     flex: 1;
     display: flex;
@@ -22,32 +76,42 @@ body {
 }
 
 .line-numbers {
-    width: 50px;
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    padding: 20px 5px;
+    padding-bottom: 0px;
     background-color: #2d2d2d;
     color: #858585;
     text-align: right;
-    padding: 20px 5px;
     font-family: 'Consolas', monospace;
     font-size: 16px;
-    line-height: 1.5;
-    overflow: hidden;
+    line-height: 24px;
     user-select: none;
-    z-index: 2; /* Повышаем z-index чтобы номера строк были над подсветкой */
 }
 
 .line-number {
     min-height: 24px;
-    position: relative; /* Для корректного позиционирования z-index */
+}
+
+.line-numbers-container {
+    width: 50px;
+    overflow: hidden;
+    position: relative;
+    z-index: 3;
+    background-color: #2d2d2d;
 }
 
 #code-editor {
     flex: 1;
-    background: transparent; /* Делаем фон прозрачным чтобы видеть подсветку */
+    background: transparent;
     color: #d4d4d4;
     border: none;
     padding: 20px;
+    padding-bottom: 0px;
     font-size: 16px;
-    line-height: 1.5;
+    line-height: 24px;
     resize: none;
     outline: none;
     font-family: 'Consolas', monospace;
@@ -55,8 +119,7 @@ body {
     white-space: pre;
     overflow: auto;
     margin: 0;
-    position: relative;
-    z-index: 1; /* Редактор над подсветкой, но под номерами строк */
+    z-index: 2;
 }
 
 /* Новый элемент для подсветки активной строки */
@@ -77,6 +140,8 @@ body {
     color: white;
     padding: 5px 15px;
     font-size: 12px;
+    position: relative;
+    z-index: 1;
 }
 
 /* Стили для скроллбара */
@@ -101,4 +166,62 @@ body {
 .active-line {
     background: #323232;
     color: #ffffff;
+}
+
+/* Стили для автодополнения */
+#autocomplete-container {
+    position: fixed;
+    background: #252526;
+    border: 1px solid #454545;
+    border-radius: 4px;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.5);
+    z-index: 1000;
+    display: none;
+    max-height: 200px;
+    overflow-y: auto;
+    transform: translateZ(0); /* Аппаратное ускорение */
+    will-change: transform, opacity; /* Оптимизация */
+}
+
+.autocomplete-item {
+    padding: 5px 10px;
+    cursor: pointer;
+    font-family: 'Consolas', monospace;
+    font-size: 14px;
+    color: #d4d4d4;
+    z-index: 1000;
+}
+
+.autocomplete-item:hover, .autocomplete-item.selected {
+    background: #094771;
+    color: #fff;
+}
+
+.autocomplete-type {
+    color: #569cd6;
+    font-size: 12px;
+    margin-left: 10px;
+    float: right;
+}
+
+.autocomplete-details {
+    font-size: 12px;
+    color: #9a9a9a;
+    margin-top: 3px;
+}
+
+/* Стили для скрытой панели */
+.activity-bar.collapsed {
+    width: 0;
+    overflow: hidden;
+    border-right: none;
+}
+
+.activity-bar.collapsed ~ .editor-container {
+    margin-left: -10px;
+}
+
+/* Анимация для плавного скрытия/показа */
+.editor-container {
+    transition: margin-left 0.2s ease;
 }

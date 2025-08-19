@@ -1,4 +1,5 @@
 import json
+import os
 import re
 import logging
 
@@ -7,9 +8,28 @@ logger = logging.getLogger('LSP-Handler')
 
 
 class SimpleLSP:
-    def __init__(self):
-        self.keywords = ["алгоритм", "начало", "конец", "цикл", "если", "иначе"]
+    def __init__(self, syntax_file="syntax.json"):
+        self.syntax = self.load_syntax(syntax_file)
         self.documents = {}
+
+    def load_syntax(self, file_path):
+        try:
+            # Автоматическое определение пути к файлу
+            if not os.path.isabs(file_path):
+                base_dir = os.path.dirname(os.path.abspath(__file__))
+                file_path = os.path.join(base_dir, file_path)
+
+            with open(file_path, "r", encoding="utf-8") as f:
+                return json.load(f)
+        except Exception as e:
+            logger.error(f"Ошибка загрузки синтаксиса: {e}")
+            # Возвращаем синтаксис по умолчанию при ошибке
+            return {
+                "keywords": [],
+                "operators": [],
+                "types": [],
+                "builtin_functions": []
+            }
 
     async def handle(self, message):
         try:
@@ -70,9 +90,14 @@ class SimpleLSP:
                 logger.info(f"Текущее слово: '{last_word}'")
 
                 # Фильтруем ключевые слова
-                suggestions = [kw for kw in self.keywords if kw.startswith(last_word)]
+                all_items = (
+                        self.syntax["keywords"] +
+                        self.syntax["operators"] +
+                        self.syntax["types"] +
+                        self.syntax["builtin_functions"]
+                )
+                suggestions = [kw for kw in all_items if kw.lower().startswith(last_word.lower())]
                 logger.info(f"Предложения: {suggestions}")
-
                 return {
                     "jsonrpc": "2.0",
                     "id": data["id"],
