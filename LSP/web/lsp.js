@@ -1,0 +1,166 @@
+class LSPClient {
+    constructor() {
+        this.ws = null;
+        this.documentVersion = 1;
+        this.lastCompletionRequestId = 0;
+        this.pendingCompletions = {};
+        this.initializePromise = null;
+        this.uri = "file:///current";
+        this.initializeResolve = null;
+    }
+
+    connect(url) {
+        return new Promise((resolve, reject) => {
+            this.ws = new WebSocket(url);
+
+            this.ws.onopen = () => {
+                console.log("Connected to LSP server");
+                this.initialize().then(resolve).catch(reject);
+            };
+
+            this.ws.onerror = (error) => {
+                console.error("WebSocket error:", error);
+                reject(error);
+            };
+
+            this.ws.onmessage = (event) => {
+                this.handleMessage(event.data);
+            };
+
+            this.ws.onclose = () => {
+                console.log("Disconnected from LSP server");
+            };
+        });
+    }
+
+    initialize() {
+        if (this.initializePromise) {
+            return this.initializePromise;
+        }
+
+        this.initializePromise = new Promise((resolve, reject) => {
+            // Сохраняем функции разрешения/отклонения
+            this.initializeResolve = resolve;
+            this.initializeReject = reject;
+
+            const id = 1;
+            this.send({
+                jsonrpc: "2.0",
+                id: id,
+                method: "initialize",
+                params: {
+                    capabilities: {},
+                    rootUri: "file:///project-root"
+                }
+            });
+        });
+
+        return this.initializePromise;
+    }
+
+    sendDidOpen(text) {
+        this.documentVersion = 1;
+        this.send({
+            jsonrpc: "2.0",
+            method: "textDocument/didOpen",
+            params: {
+                textDocument: {
+                    uri: this.uri,
+                    languageId: "myalgo",
+                    version: this.documentVersion,
+                    text: text
+                }
+            }
+        });
+    }
+
+    sendDidChange(text) {
+        this.documentVersion++;
+        this.send({
+            jsonrpc: "2.0",
+            method: "textDocument/didChange",
+            params: {
+                textDocument: {
+                    uri: this.uri,
+                    version: this.documentVersion
+                },
+                contentChanges: [{
+                    text: text
+                }]
+            }
+        });
+    }
+
+    requestCompletion(position) {
+        return new Promise((resolve) => {
+            const requestId = ++this.lastCompletionRequestId;
+
+            this.pendingCompletions[requestId] = { resolve, position };
+
+            // ВАЖНО: LSP использует line и character (не column)
+            this.send({
+                jsonrpc: "2.0",
+                id: requestId,
+                method: "textDocument/completion",
+                params: {
+                    textDocument: { uri: this.uri },
+                    position: {
+                        line: position.line,        // 0-based строка
+                        character: position.character // 0-based позиция в строке
+                    }
+                }
+            });
+        });
+    }
+
+    handleMessage(data) {
+        // Обрабатываем разные форматы данных
+        let message;
+//        console.log(typeof data)
+        if (typeof data === 'string') {
+            try {
+                message = JSON.parse(data);
+            } catch (error) {
+                console.error("Error parsing JSON:", error, "Data:", data);
+                return;
+            }
+        } else if (typeof data === 'object') {
+            message = data;
+//            console.log(Object.keys(message))
+        } else {
+            console.error("Unknown message format:", typeof data, data);
+            return;
+        }
+//        console.log(Object.keys(message));
+
+        // Обработка ответа на инициализацию
+        if (message.id === 1 && this.initializeResolve) {
+            this.initializeResolve(message);
+            this.initializeResolve = null; // Сбрасываем после использования
+            return;
+        }
+
+        // Если это ответ на запрос автодополнения
+        if (message.id && this.pendingCompletions[message.id]) {
+            const { resolve } = this.pendingCompletions[message.id];
+            delete this.pendingCompletions[message.id];
+
+            let items = [];
+            if (message.result && Array.isArray(message.result)) {
+                items = message.result.map(item => item.label);
+            } else if (message.result && Array.isArray(message.result.items)) {
+                items = message.result.items.map(item => item.label);
+            }
+            resolve(items);
+        }
+        // Можно ещё какие-либо ответы на действия добавить
+    }
+
+    send(message) {
+        if (this.ws.readyState === WebSocket.OPEN) {
+            this.ws.send(JSON.stringify(message));
+        } else {
+            console.error("WebSocket is not open. Cannot send message:", message);
+        }
+    }
+}
