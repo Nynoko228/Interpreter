@@ -21,7 +21,7 @@
 
         <div class="side-panel" id="side-panel">
             <div class="panel-content" id="panel-content">
-                <!-- Контент будет добавляться динамически -->
+
             </div>
         </div>
 
@@ -32,14 +32,17 @@
                 </div>
             </div>
             <div id="active-line-highlighter"></div>
+            <!-- Подсветка синтаксиса -->
+            <pre id="highlight" class="highlight" aria-hidden="true"></pre>
             <textarea id="code-editor" spellcheck="false"></textarea>
         </div>
     </div>
     <div class="status-bar" id="status-bar">Готов</div>
     <div id="autocomplete-container"></div>
 
-    <!-- Подключаем файлы в правильном порядке -->
     <script src="lsp.js"></script>
+    <script src="highlighter.js"></script>
+    <script src="side_panel.js"></script>
     <script src="main.js"></script>
 </body>
 </html>

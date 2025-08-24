@@ -113,6 +113,50 @@ class LSPClient {
         });
     }
 
+    async requestFiles() {
+        return new Promise((resolve, reject) => {
+            const requestId = ++this.lastCompletionRequestId;
+
+            this.pendingCompletions[requestId] = { resolve, reject };
+
+            this.send({
+                jsonrpc: "2.0",
+                id: requestId,
+                method: "workspace/listFiles",
+                params: {}
+            });
+        });
+    }
+
+    async readFile(path) {
+        return new Promise((resolve, reject) => {
+            const requestId = ++this.lastCompletionRequestId;
+
+            this.pendingCompletions[requestId] = { resolve, reject };
+
+            this.send({
+                jsonrpc: "2.0",
+                id: requestId,
+                method: "workspace/readFile",
+                params: { path }
+            });
+        });
+    }
+
+    requestSyntax() {
+        return new Promise((resolve, reject) => {
+            const requestId = ++this.lastCompletionRequestId;
+            this.pendingCompletions[requestId] = { resolve, reject };
+
+            this.send({
+                jsonrpc: "2.0",
+                id: requestId,
+                method: "workspace/getSyntax",
+                params: {}
+            });
+        });
+    }
+
     handleMessage(data) {
         // Обрабатываем разные форматы данных
         let message;
@@ -142,17 +186,48 @@ class LSPClient {
 
         // Если это ответ на запрос автодополнения
         if (message.id && this.pendingCompletions[message.id]) {
-            const { resolve } = this.pendingCompletions[message.id];
-            delete this.pendingCompletions[message.id];
+        const { resolve, reject } = this.pendingCompletions[message.id];
+        delete this.pendingCompletions[message.id];
 
-            let items = [];
-            if (message.result && Array.isArray(message.result)) {
-                items = message.result.map(item => item.label);
-            } else if (message.result && Array.isArray(message.result.items)) {
-                items = message.result.items.map(item => item.label);
+        // Ответ от сервера
+        console.log("LSP message for request", message.id, message);
+
+        try {
+            if (message.result === undefined || message.result === null) {
+                resolve(null);
+                return;
             }
-            resolve(items);
+
+            // Если result — массив (например workspace/listFiles -> [{path,name,...}, ...])
+            if (Array.isArray(message.result)) {
+                // Если элементы имеют поле label — это completion, вернём массив label
+                if (message.result.length > 0 && message.result[0] && 'label' in message.result[0]) {
+                    resolve(message.result.map(i => i.label));
+                } else {
+                    // Иначе — возвращаем массив объектов как есть (файлы и т.д.)
+                    resolve(message.result);
+                }
+                return;
+            }
+
+            // Частый формат автодополнений: { items: [...] }
+            if (message.result.items && Array.isArray(message.result.items)) {
+                if (message.result.items.length > 0 && 'label' in message.result.items[0]) {
+                    resolve(message.result.items.map(i => i.label));
+                } else {
+                    resolve(message.result.items);
+                }
+                return;
+            }
+
+            // Во всех остальных случаях — возвращаем result напрямую
+            resolve(message.result);
+        } catch (e) {
+            console.error("Error processing LSP message:", e, message);
+            // fallback — отдадим что есть
+            resolve(message.result);
         }
+    }
         // Можно ещё какие-либо ответы на действия добавить
     }
 

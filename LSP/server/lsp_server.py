@@ -2,6 +2,7 @@ import json
 import os
 import re
 import logging
+from pathlib import Path
 
 # Настройка логирования
 logger = logging.getLogger('LSP-Handler')
@@ -30,6 +31,103 @@ class SimpleLSP:
                 "types": [],
                 "builtin_functions": []
             }
+
+    async def handle_list_files(self, data):
+        try:
+            # Укажите путь к вашей рабочей директории
+            workspace_path = Path(__file__).resolve().parent.parent / "data"
+            # print(workspace_path)
+            files = []
+
+            for item in workspace_path.iterdir():
+                files.append({
+                    "name": item.name,
+                    "path": str(item),
+                    "isDirectory": item.is_dir(),
+                    "size": item.stat().st_size if item.is_file() else 0
+                })
+
+            return {
+                "jsonrpc": "2.0",
+                "id": data["id"],
+                "result": files
+            }
+        except Exception as e:
+            return {
+                "jsonrpc": "2.0",
+                "id": data["id"],
+                "error": {
+                    "code": -32000,
+                    "message": f"Ошибка чтения директории: {str(e)}"
+                }
+            }
+
+    async def handle_read_file(self, data):
+        try:
+            file_path = data["params"]["path"]
+            with open(file_path, "r", encoding="utf-8") as f:
+                content = f.read()
+
+            return {
+                "jsonrpc": "2.0",
+                "id": data["id"],
+                "result": {
+                    "content": content,
+                    "path": file_path
+                }
+            }
+        except Exception as e:
+            return {
+                "jsonrpc": "2.0",
+                "id": data["id"],
+                "error": {
+                    "code": -32000,
+                    "message": f"Ошибка чтения файла: {str(e)}"
+                }
+            }
+
+    async def completion(self, data):
+        uri = data["params"]["textDocument"]["uri"]
+        line = data["params"]["position"]["line"]
+        character = data["params"]["position"]["character"]
+
+        logger.info(f"Запрос автодополнения для URI: {uri}, позиция: строка {line}, символ {character}")
+
+        text = self.documents.get(uri, "")
+        lines = text.split("\n")
+
+        if line < 0 or line >= len(lines):
+            logger.warning(f"Запрошена несуществующая строка: {line} (всего строк: {len(lines)})")
+            return {
+                "jsonrpc": "2.0",
+                "id": data["id"],
+                "result": []
+            }
+
+        current_line = lines[line]
+        logger.debug(f"Текущая строка: '{current_line}'")
+
+        # Получаем текущее слово
+        prefix = current_line[:character]
+        last_word = re.findall(r'[\wа-яА-Я]*$', prefix)[0]  # Разрешаем русские буквы
+        logger.info(f"Текущее слово: '{last_word}'")
+
+        # Фильтруем ключевые слова
+        all_items = (
+                self.syntax["keywords"] +
+                self.syntax["operators"] +
+                self.syntax["types"] +
+                self.syntax["builtin_functions"]
+        )
+        suggestions = [kw for kw in all_items if kw.lower().startswith(last_word.lower())]
+        logger.info(f"Предложения: {suggestions}")
+        return {
+            "jsonrpc": "2.0",
+            "id": data["id"],
+            "result": [
+                {"label": kw, "kind": 14} for kw in suggestions
+            ]
+        }
 
     async def handle(self, message):
         try:
@@ -64,46 +162,16 @@ class SimpleLSP:
                 return None
 
             elif data.get("method") == "textDocument/completion":
-                uri = data["params"]["textDocument"]["uri"]
-                line = data["params"]["position"]["line"]
-                character = data["params"]["position"]["character"]
-
-                logger.info(f"Запрос автодополнения для URI: {uri}, позиция: строка {line}, символ {character}")
-
-                text = self.documents.get(uri, "")
-                lines = text.split("\n")
-
-                if line < 0 or line >= len(lines):
-                    logger.warning(f"Запрошена несуществующая строка: {line} (всего строк: {len(lines)})")
-                    return {
-                        "jsonrpc": "2.0",
-                        "id": data["id"],
-                        "result": []
-                    }
-
-                current_line = lines[line]
-                logger.debug(f"Текущая строка: '{current_line}'")
-
-                # Получаем текущее слово
-                prefix = current_line[:character]
-                last_word = re.findall(r'[\wа-яА-Я]*$', prefix)[0]  # Разрешаем русские буквы
-                logger.info(f"Текущее слово: '{last_word}'")
-
-                # Фильтруем ключевые слова
-                all_items = (
-                        self.syntax["keywords"] +
-                        self.syntax["operators"] +
-                        self.syntax["types"] +
-                        self.syntax["builtin_functions"]
-                )
-                suggestions = [kw for kw in all_items if kw.lower().startswith(last_word.lower())]
-                logger.info(f"Предложения: {suggestions}")
+                return await self.completion(data)
+            elif data.get("method") == "workspace/listFiles":
+                return await self.handle_list_files(data)
+            elif data.get("method") == "workspace/readFile":
+                return await self.handle_read_file(data)
+            elif data.get("method") == "workspace/getSyntax":
                 return {
                     "jsonrpc": "2.0",
                     "id": data["id"],
-                    "result": [
-                        {"label": kw, "kind": 14} for kw in suggestions
-                    ]
+                    "result": self.syntax
                 }
 
         except Exception as e:

@@ -8,13 +8,43 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // Создаем клиент LSP
     const lspClient = new LSPClient();
-    lspClient.connect("ws://localhost:8765").then(() => {
+    window.editor = editor;
+    window.statusBar = statusBar;
+    window.lspClient = lspClient;
+    lspClient.connect("ws://localhost:8765").then(async () => {
         statusBar.textContent = 'LSP подключен';
-        // После подключения отправляем текущее содержимое редактора
         lspClient.sendDidOpen(editor.value);
-    }).catch(error => {
-        statusBar.textContent = 'Ошибка подключения к LSP';
-        console.error("LSP connection error:", error);
+
+        // Попробуем получить спецификацию через LSP
+        try {
+            const spec = await lspClient.requestSyntax();
+            console.log("Спецификация языка от LSP:", spec);
+
+            if (spec && Object.keys(spec).length > 0) {
+                await Highlighter.loadSpec(spec);
+                    const highlighterApi = Highlighter.attach({
+                    editorId: 'code-editor',
+                    highlightId: 'highlight',
+                    lineNumbersSelector: '.line-numbers',
+                    activeLineId: 'active-line-highlighter',
+                    debounceMs: 40
+                });
+                window.highlighterApi = highlighterApi
+                console.info("Highlighter: спецификация загружена из LSP");
+            } else {
+                console.warn("Highlighter: пустая спецификация от LSP — использовать локальную или дефолтную");
+            }
+        } catch (err) {
+            console.error("Не удалось загрузить спецификацию через LSP:", err);
+        }
+        })
+        .catch(error => {
+            statusBar.textContent = 'Ошибка подключения к LSP';
+            console.error("LSP connection error:", error);
+        });
+
+        Highlighter.loadSpec(lspClient).then(() => {
+        Highlighter.attach({ editorId: 'code-editor', highlightId: 'highlight' });
     });
 
     // Инициализация номеров строк
@@ -60,7 +90,7 @@ document.addEventListener('DOMContentLoaded', () => {
     function updateActiveLineHighlighter(lineNumber) {
         if (!activeLineHighlighter) return;
 
-        const lineHeight = 24;
+        const lineHeight = parseFloat(window.getComputedStyle(editor).lineHeight);
         const paddingTop = 20;
         const topPosition = paddingTop + (lineNumber * lineHeight) - editor.scrollTop;
 
@@ -161,11 +191,12 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // Показываем подсказки под текущей строкой
     function showSuggestions(suggestions, position) {
-        if (suggestions.length === 0) {
+        if (!suggestions || suggestions.length === 0) {
             hideSuggestions();
             return;
         }
 
+        // Очистка и наполнение
         autocompleteContainer.innerHTML = '';
         selectedSuggestionIndex = 0;
 
@@ -182,15 +213,137 @@ document.addEventListener('DOMContentLoaded', () => {
             autocompleteContainer.appendChild(item);
         });
 
-        const lineHeight = 24;
+    // ---------- вычисление позиции ----------
+
+    // helper: попробуем достать текст строки из редактора (несколько вариантов API)
+        function getLineText(line) {
+            try {
+//                if (typeof editor.getLine === 'function') {
+//                    return editor.getLine(line) || '';
+//                }
+                if (editor.value !== undefined) { // textarea / input
+                    const lines = editor.value.split(/\r?\n/);
+                    return lines[line] || '';
+                }
+//                if (editor.document && typeof editor.document.getLine === 'function') {
+//                    return editor.document.getLine(line) || '';
+//                }
+            } catch (e) {
+                // silently fallback
+            }
+            return '';
+        }
+
+        // helper: измерить ширину одного символа в px (создаём невидимый span в том же шрифте, что editor)
+        function measureCharWidth() {
+            let cached = showSuggestions._charWidth;
+            if (cached) return cached;
+
+            const span = document.createElement('span');
+            span.style.position = 'absolute';
+            span.style.visibility = 'hidden';
+            span.style.whiteSpace = 'nowrap';
+            // попытка унаследовать ключевые свойства шрифта от редактора
+            try {
+                const editorStyle = window.getComputedStyle(typeof editor.getWrapperElement === 'function' ? editor.getWrapperElement() : (editor instanceof HTMLElement ? editor : document.body));
+                span.style.fontFamily = editorStyle.fontFamily;
+                span.style.fontSize = editorStyle.fontSize;
+                span.style.fontWeight = editorStyle.fontWeight;
+            } catch (e) { /* fallback */ }
+
+            span.textContent = 'm'.repeat(10);
+            document.body.appendChild(span);
+            const w = span.getBoundingClientRect().width / 10;
+            document.body.removeChild(span);
+            showSuggestions._charWidth = w || 8;
+            return showSuggestions._charWidth;
+        }
+
+        const lineText = getLineText(position.line) || '';
+        // определяем что считается частью "слова" (тут: буквы, цифры, подчёркивание)
+        const isWordChar = ch => /[A-Za-zА-Яа-яЁё0-9_]/.test(ch);
+        let wordStartChar = position.character;
+        // если курсор на позиции > длины строки — сработает защита
+        wordStartChar = Math.min(wordStartChar, lineText.length);
+
+        // двигаемся влево, пока символы — часть слова
+        while (wordStartChar > 0 && isWordChar(lineText.charAt(wordStartChar - 1))) {
+            wordStartChar--;
+        }
+
+        // если не нашли начало слова (например у символа, который не слово), то используем исходную позицию
+        if (wordStartChar === position.character) {
+            // но если в позиции сам символ не word, то всё равно попробуем взять ближайший непустой префикс
+            // оставим как есть — это безопасно
+        }
+
+        // Вычисляем пиксельное смещение
+        const charWidth = measureCharWidth();
+        // Попробуем получить границы редактора, чтобы позиционировать относительно него
+        const editorRect = (typeof editor.getBoundingClientRect === 'function') ? editor.getBoundingClientRect() : (editor && editor.getWrapperElement ? editor.getWrapperElement().getBoundingClientRect() : document.body.getBoundingClientRect());
+        // внутренний отступ редактора (если есть)
+        const editorPaddingLeft = parseFloat(window.getComputedStyle(editor).paddingLeft || 8) || 8;
+
+        // scrollLeft — если редактор поддерживает горизонтальный скролл
+        const scrollLeft = (editor.scrollLeft !== undefined) ? editor.scrollLeft : 0;
+
+        // базовый left: левый край редактора + внутренний отступ + смещение до начала слова
+        let leftPx = editorRect.left + editorPaddingLeft + (wordStartChar * charWidth) - scrollLeft;
+
+        // учтём горизонтальный скролл страницы (pageXOffset)
+        leftPx = leftPx + window.pageXOffset;
+
+        // верх: позиционируем по линии курсора (как у вас раньше) — но безопаснее учитывать реальный top редактора
+        const lineHeight = parseFloat(window.getComputedStyle(editor).lineHeight); // оставляем ваш базовый хардкод (можно заменить вычислением)
         const paddingTop = 20;
         const cursorLine = Math.max(0, ((position.line + 1) * lineHeight) - editor.scrollTop + paddingTop);
+        let topPx = editorRect.top + cursorLine + window.pageYOffset;
 
+        // ---------- защита от наложения на боковую панель / выходов за экран ----------
+
+        const viewportW = window.innerWidth;
+        const viewportH = window.innerHeight;
+        const suggW = 200; // желаемая ширина подсказок (вы её раньше явно устанавливали)
+        const suggH = Math.min(300, suggestions.length * 24 + 8);
+
+        // если подсказки выходят за правую границу окна, сдвинем их влево
+        if (leftPx + suggW > window.pageXOffset + viewportW - 8) {
+            leftPx = Math.max(window.pageXOffset + 8, window.pageXOffset + viewportW - suggW - 8);
+        }
+
+        // Если боковая панель есть и перекрывает это место, попытаемся разместить подсказки слева от панели
+        const sidePanel = document.querySelector('.side-panel, #side-panel, .panel'); // попробуем общие селекторы
+        if (sidePanel) {
+            const panelRect = sidePanel.getBoundingClientRect();
+            const panelLeftGlobal = panelRect.left + window.pageXOffset;
+            const panelRightGlobal = panelRect.right + window.pageXOffset;
+
+            // если подсказки попадают под панель (пересечение по горизонтали)
+            if (!(leftPx + suggW < panelLeftGlobal || leftPx > panelRightGlobal)) {
+                // попробуем сдвинуть подсказки влево от панели (если достаточно места)
+                const tryLeft = panelLeftGlobal - suggW - 8;
+                if (tryLeft > window.pageXOffset + 8) {
+                    leftPx = tryLeft;
+                } else {
+                    // иначе просто выставим максимально возможную левую позицию (не выходя за экран)
+                    leftPx = Math.max(window.pageXOffset + 8, leftPx - panelRect.width - 8);
+                }
+            }
+        }
+
+        // по вертикали: если подсказки выходят за низ экрана — поднять их над курсором
+        if (topPx + suggH > window.pageYOffset + viewportH - 8) {
+            topPx = Math.max(window.pageYOffset + 8, topPx - suggH - 8);
+        }
+
+        // Применяем стили
         autocompleteContainer.style.display = 'block';
-        autocompleteContainer.style.top = `${cursorLine}px`;
-        autocompleteContainer.style.left = `${position.character * 8 + 50}px`;
-        autocompleteContainer.style.width = '200px';
+        autocompleteContainer.style.top = `${Math.round(topPx)}px`;
+        autocompleteContainer.style.left = `${Math.round(leftPx)}px`;
+        autocompleteContainer.style.width = `${suggW}px`;
+        autocompleteContainer.style.maxHeight = `${suggH}px`;
     }
+
 
     // Скрываем подсказки
     function hideSuggestions() {
@@ -200,23 +353,75 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // Вставляем выбранную подсказку
     function insertSuggestion(suggestion) {
-        const cursorPos = editor.selectionStart;
-        const value = editor.value;
+        // Сохраняем текущие элементы/объекты в локальные переменные
+        const editorEl = editor; // ваш textarea
+        const lsp = lspClient;   // ваш LSP-клиент
 
+        // Текущая позиция курсора и значение
+        const cursorPos = editorEl.selectionStart;
+        const value = editorEl.value;
+
+        // Находим начало слова слева (поддержка кириллицы)
         let wordStart = cursorPos;
-        while (wordStart > 0 && /[\w$]/.test(value.charAt(wordStart - 1))) {
+        while (wordStart > 0 && /[A-Za-zА-Яа-яЁё0-9_]/.test(value.charAt(wordStart - 1))) {
             wordStart--;
         }
 
+        // Находим конец слова справа (необязательно, но безопасно)
+        let wordEnd = cursorPos;
+        while (wordEnd < value.length && /[A-Za-zА-Яа-яЁё0-9_]/.test(value.charAt(wordEnd))) {
+            wordEnd++;
+        }
+
         const before = value.substring(0, wordStart);
-        const after = value.substring(cursorPos);
+        const after = value.substring(cursorPos); // keep text after cursor (not after wordEnd)
 
-        editor.value = before + suggestion + after;
-        editor.selectionStart = editor.selectionEnd = wordStart + suggestion.length;
+        // Вставляем подсказку
+        const newValue = before + suggestion + after;
+        editorEl.value = newValue;
 
+        // Ставим каретку сразу после вставленного слова
+        const newCaret = wordStart + suggestion.length;
+        editorEl.selectionStart = editorEl.selectionEnd = newCaret;
+
+        // Синхронизация: обновляем номера/подсветку и уведомляем LSP
+        try {
+            updateLineNumbers();
+        } catch (e) { console.warn("updateLineNumbers error:", e); }
+
+        // сообщаем серверу об изменении прямо (т.к. программное изменение не вызывает input)
+        try {
+            if (lsp && typeof lsp.sendDidChange === 'function') {
+                lsp.sendDidChange(editorEl.value);
+            }
+        } catch (e) { console.warn("sendDidChange error:", e); }
+
+        // Обновляем overlay — сначала быстрый апдейт текущей строки
+        try {
+            // используем window.highlighterApi если доступен, иначе fallback на Highlighter.highlightNow()
+            if (window.highlighterApi && typeof window.highlighterApi.quickUpdateCurrentLine === 'function') {
+                window.highlighterApi.quickUpdateCurrentLine();
+            } else if (typeof highlighterApi !== 'undefined' && highlighterApi && typeof highlighterApi.quickUpdateCurrentLine === 'function') {
+                highlighterApi.quickUpdateCurrentLine();
+            } else if (window.Highlighter && typeof Highlighter.highlightNow === 'function') {
+                Highlighter.highlightNow();
+            }
+        } catch (e) {
+            console.warn("Highlighter update failed:", e);
+        }
+
+        // Скрываем подсказки
         hideSuggestions();
-        updateLineNumbers();
+
+        // Вернуть фокус в редактор (чтобы каретка видна)
+        try { editorEl.focus(); } catch (e) {}
+
+        // И — ВАЖНО — диспатчим событие input, чтобы все обработчики (статус, debounce completion и т.д.) сработали
+        // Это необходимо, потому что programmatic change не вызывает native input автоматически
+        const ev = new Event('input', { bubbles: true });
+        editorEl.dispatchEvent(ev);
     }
+
 
     // Получаем текущее слово и позицию курсора
     function getCurrentWord() {
@@ -300,26 +505,82 @@ document.addEventListener('DOMContentLoaded', () => {
         // Запрос автодополнения с задержкой
         clearTimeout(completionDebounce);
         completionDebounce = setTimeout(async () => {
-            if (word.length >= 1) {
-                try {
-                    hideSuggestions();
-                    statusBar.textContent = 'Загрузка подсказок...';
+            // пересчитаем текущее слово и позицию на момент выполнения (могли измениться)
+            const current = getCurrentWord();
+            const wordNow = current.word || '';
+            if (wordNow.length < 1) {
+                hideSuggestions();
+                return;
+            }
 
-                    // УБИРАЕМ деструктуризацию position
-                    const items = await lspClient.requestCompletion(currentWordInfo.position); // <-- Исправление
-                    if (items.length > 0) {
-                        showSuggestions(items, currentWordInfo.position);
-                        statusBar.textContent = 'Готов';
-                    } else {
-                        hideSuggestions();
-                    }
-                } catch (error) {
-                    console.error("Ошибка автодополнения:", error);
+            // Опционально: не показываем, если список уже видим и слово пустое
+            try {
+                statusBar.textContent = 'Загрузка подсказок...';
+
+                const items = await lspClient.requestCompletion(current.position);
+
+                // Если сервер вернул null/undefined — ничего не делаем
+                if (!items || items.length === 0) {
+                    hideSuggestions();
+                    statusBar.textContent = 'Готов';
+                    return;
                 }
-            } else {
+
+                // Нормализуем labels — items может быть массивом строк или объектов {label: ...}
+                const labels = items.map(it => (typeof it === 'string') ? it : (it.label || '')).filter(Boolean);
+
+                // Если среди labels есть точное соответствие текущему слову -> НЕ показываем подсказки
+                const lowerWord = wordNow.toLowerCase();
+                const exactMatch = labels.find(l => l.toLowerCase() === lowerWord);
+                if (exactMatch) {
+                    hideSuggestions();
+                    statusBar.textContent = 'Готов';
+                    return;
+                }
+
+                // Иначе показываем подсказки
+                showSuggestions(labels, current.position);
+                statusBar.textContent = 'Готов';
+            } catch (error) {
+                console.error("Ошибка автодополнения:", error);
+                // Не показываем ничего в ошибочном случае
                 hideSuggestions();
             }
         }, 300);
+
+        try {
+        highlighterApi.quickUpdateCurrentLine();
+        (function hideIfFullyTyped() {
+            const cwInfo = getCurrentWord(); // у вас уже есть функция getCurrentWord()
+            const cw = cwInfo.word || '';
+            if (!cw) {
+                hideSuggestions();
+                return;
+            }
+
+            if (autocompleteContainer.style.display !== 'block') return;
+
+            // получаем текст всех видимых подсказок
+            const items = Array.from(autocompleteContainer.querySelectorAll('.autocomplete-item'))
+                               .map(el => (el.textContent || '').trim());
+
+            const lowerCW = cw.toLowerCase();
+
+            // проверяем, есть ли подсказка, точно равная введённому слову (регистронезависимо)
+            const exact = items.find(it => it.toLowerCase() === lowerCW);
+            if (!exact) return;
+
+            // убедимся, что каретка стоит в конце слова (т.е. символ справа не является частью слова)
+            const afterChar = editor.value.charAt(editor.selectionStart) || '';
+            const isAfterWord = !/[\wа-яА-ЯёЁ0-9_]/.test(afterChar);
+
+            if (isAfterWord) {
+                hideSuggestions();
+            }
+        })();
+      } catch (e) {
+        console.warn('quickUpdateCurrentLine failed:', e);
+      }
     });
 
     editor.addEventListener('scroll', () => {
@@ -392,26 +653,4 @@ document.addEventListener('DOMContentLoaded', () => {
         const lineNumber = (textBeforeCursor.match(/\n/g) || []).length;
         updateActiveLineHighlighter(lineNumber);
     });
-});
-
-// Добавляем обработчики для кнопок activity bar
-document.addEventListener('DOMContentLoaded', () => {
-    const activityBar = document.querySelector('.activity-bar');
-    const filesBtn = document.getElementById('files-btn');
-    const bookBtn = document.getElementById('book-btn');
-
-    // Обработчики для кнопок
-    filesBtn.addEventListener('click', () => {
-        activityBar.classList.toggle('collapsed');
-        filesBtn.classList.toggle('active', !activityBar.classList.contains('collapsed'));
-    });
-
-    bookBtn.addEventListener('click', () => {
-        // Здесь можно добавить функционал для кнопки справки
-        bookBtn.classList.toggle('active');
-        // Пока просто переключаем активное состояние
-    });
-
-    // Инициализация активного состояния
-    filesBtn.classList.add('active');
 });
