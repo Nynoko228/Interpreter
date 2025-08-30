@@ -309,4 +309,64 @@ class LSPClient {
             });
         });
     }
+    
+    // Метод для создания файла в указанной папке
+    async createFileInFolder(parentPath, fileName, content = '') {
+        return new Promise((resolve, reject) => {
+            const requestId = ++this.lastCompletionRequestId;
+            this.pendingCompletions[requestId] = { resolve, reject };
+
+            this.send({
+                jsonrpc: "2.0",
+                id: requestId,
+                method: "workspace/createFileInFolder",
+                params: { parentPath, fileName, content }
+            });
+        });
+    }
+    
+    // Метод для создания папки в указанной папке
+    async createFolderInFolder(parentPath, folderName) {
+        return new Promise((resolve, reject) => {
+            const requestId = ++this.lastCompletionRequestId;
+            this.pendingCompletions[requestId] = { resolve, reject };
+
+            this.send({
+                jsonrpc: "2.0",
+                id: requestId,
+                method: "workspace/createFolderInFolder",
+                params: { parentPath, folderName }
+            });
+        });
+    }
+    
+    // Метод для переименования файла/папки
+    async renameItem(oldPath, newName) {
+        return new Promise((resolve, reject) => {
+            const requestId = ++this.lastCompletionRequestId;
+            this.pendingCompletions[requestId] = { resolve, reject };
+
+            this.send({
+                jsonrpc: "2.0",
+                id: requestId,
+                method: "workspace/renameItem",
+                params: { oldPath, newName }
+            });
+        });
+    }
+    
+    // Метод для перемещения файла/папки
+    async moveItem(sourcePath, targetPath) {
+        return new Promise((resolve, reject) => {
+            const requestId = ++this.lastCompletionRequestId;
+            this.pendingCompletions[requestId] = { resolve, reject };
+
+            this.send({
+                jsonrpc: "2.0",
+                id: requestId,
+                method: "workspace/moveItem",
+                params: { sourcePath, targetPath }
+            });
+        });
+    }
 }

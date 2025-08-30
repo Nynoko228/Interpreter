@@ -384,9 +384,280 @@ class SimpleLSP:
                 return await self.handle_save_file(data)
             elif data.get("method") == "workspace/listFolder":
                 return await self.handle_list_folder(data)
+            elif data.get("method") == "workspace/createFileInFolder":
+                return await self.handle_create_file_in_folder(data)
+            elif data.get("method") == "workspace/createFolderInFolder":
+                return await self.handle_create_folder_in_folder(data)
+            elif data.get("method") == "workspace/renameItem":
+                return await self.handle_rename_item(data)
+            elif data.get("method") == "workspace/moveItem":
+                return await self.handle_move_item(data)
 
         except Exception as e:
             logger.error(f"Ошибка обработки сообщения: {e}")
             import traceback
             logger.error(traceback.format_exc())
         return None
+    
+    async def handle_create_file_in_folder(self, data):
+        """Создание файла в указанной папке"""
+        try:
+            parent_path = data["params"]["parentPath"]
+            file_name = data["params"]["fileName"]
+            content = data["params"].get("content", "")
+            
+            # Валидация пути и имени
+            if not self.validate_path(parent_path) or not self.validate_filename(file_name):
+                return self.error_response(data["id"], "Некорректный путь или имя файла")
+            
+            # Определяем полные пути
+            if os.path.isabs(parent_path):
+                full_parent_path = Path(parent_path)
+            else:
+                # Если parent_path пустой или равен 'data', используем workspace_path
+                if not parent_path or parent_path == 'data':
+                    full_parent_path = self.workspace_path
+                else:
+                    full_parent_path = self.workspace_path / parent_path
+                
+            # Создаём файл
+            file_path = full_parent_path / file_name
+            
+            # Проверяем, что файл не существует
+            if file_path.exists():
+                return self.error_response(data["id"], f"Файл '{file_name}' уже существует")
+            
+            # Создаём директорию, если нужно
+            full_parent_path.mkdir(parents=True, exist_ok=True)
+            
+            # Создаём файл
+            with open(file_path, "w", encoding="utf-8") as f:
+                f.write(content)
+            
+            return {
+                "jsonrpc": "2.0",
+                "id": data["id"],
+                "result": {
+                    "success": True,
+                    "path": str(file_path),
+                    "name": file_name
+                }
+            }
+            
+        except Exception as e:
+            logger.error(f"Error creating file in folder: {str(e)}")
+            return self.error_response(data["id"], f"Ошибка создания файла: {str(e)}")
+    
+    async def handle_create_folder_in_folder(self, data):
+        """Создание папки в указанной папке"""
+        try:
+            parent_path = data["params"]["parentPath"]
+            folder_name = data["params"]["folderName"]
+            
+            # Валидация пути и имени
+            if not self.validate_path(parent_path) or not self.validate_filename(folder_name):
+                return self.error_response(data["id"], "Некорректный путь или имя папки")
+            
+            # Определяем полные пути
+            if os.path.isabs(parent_path):
+                full_parent_path = Path(parent_path)
+            else:
+                # Если parent_path пустой или равен 'data', используем workspace_path
+                if not parent_path or parent_path == 'data':
+                    full_parent_path = self.workspace_path
+                else:
+                    full_parent_path = self.workspace_path / parent_path
+                
+            # Создаём папку
+            folder_path = full_parent_path / folder_name
+            
+            # Проверяем, что папка не существует
+            if folder_path.exists():
+                return self.error_response(data["id"], f"Папка '{folder_name}' уже существует")
+            
+            # Создаём папку
+            folder_path.mkdir(parents=True, exist_ok=True)
+            
+            return {
+                "jsonrpc": "2.0",
+                "id": data["id"],
+                "result": {
+                    "success": True,
+                    "path": str(folder_path),
+                    "name": folder_name
+                }
+            }
+            
+        except Exception as e:
+            logger.error(f"Error creating folder in folder: {str(e)}")
+            return self.error_response(data["id"], f"Ошибка создания папки: {str(e)}")
+    
+    async def handle_rename_item(self, data):
+        """Переименование файла или папки"""
+        try:
+            old_path = data["params"]["oldPath"]
+            new_name = data["params"]["newName"]
+            
+            # Валидация
+            if not self.validate_path(old_path) or not self.validate_filename(new_name):
+                return self.error_response(data["id"], "Некорректный путь или имя")
+            
+            # Определяем полные пути
+            if os.path.isabs(old_path):
+                full_old_path = Path(old_path)
+            else:
+                full_old_path = self.workspace_path / old_path
+                
+            # Новый путь в той же директории
+            full_new_path = full_old_path.parent / new_name
+            
+            # Проверяем существование исходного элемента
+            if not full_old_path.exists():
+                return self.error_response(data["id"], "Элемент не найден")
+                
+            # Проверяем, что новое имя не занято
+            if full_new_path.exists():
+                return self.error_response(data["id"], f"Элемент с именем '{new_name}' уже существует")
+            
+            # Выполняем переименование
+            full_old_path.rename(full_new_path)
+            
+            # Вычисляем относительные пути для ответа
+            try:
+                relative_new_path = str(full_new_path.relative_to(self.workspace_path))
+            except ValueError:
+                relative_new_path = str(full_new_path)
+            
+            return {
+                "jsonrpc": "2.0",
+                "id": data["id"],
+                "result": {
+                    "success": True,
+                    "oldPath": old_path,
+                    "newPath": relative_new_path,
+                    "newName": new_name
+                }
+            }
+            
+        except Exception as e:
+            logger.error(f"Error renaming item: {str(e)}")
+            return self.error_response(data["id"], f"Ошибка переименования: {str(e)}")
+    
+    async def handle_move_item(self, data):
+        """Перемещение файла или папки"""
+        try:
+            source_path = data["params"]["sourcePath"]
+            target_path = data["params"]["targetPath"]
+            
+            logger.debug(f"Move item request: source='{source_path}', target='{target_path}'")
+            
+            # Валидация
+            if not self.validate_path(source_path) or not self.validate_path(target_path):
+                logger.error(f"Invalid paths: source='{source_path}', target='{target_path}'")
+                return self.error_response(data["id"], "Некорректные пути")
+            
+            # Определяем полные пути
+            if os.path.isabs(source_path):
+                full_source_path = Path(source_path)
+            else:
+                full_source_path = self.workspace_path / source_path
+                
+            # Обработка целевого пути - особая логика для корневой папки
+            if os.path.isabs(target_path):
+                full_target_path = Path(target_path)
+            else:
+                # Если target_path пустой, 'data' или '', используем workspace_path
+                if not target_path or target_path == 'data' or target_path == '':
+                    full_target_path = self.workspace_path
+                    logger.debug(f"Using workspace_path as target: {full_target_path}")
+                else:
+                    full_target_path = self.workspace_path / target_path
+                    logger.debug(f"Using relative target path: {full_target_path}")
+            
+            logger.debug(f"Resolved paths: source={full_source_path}, target={full_target_path}")
+            
+            # Проверяем существование исходного элемента
+            if not full_source_path.exists():
+                logger.error(f"Source path does not exist: {full_source_path}")
+                return self.error_response(data["id"], "Исходный элемент не найден")
+            
+            # Проверяем, что целевая папка существует и является папкой
+            if not full_target_path.exists() or not full_target_path.is_dir():
+                logger.error(f"Target path does not exist or is not a directory: {full_target_path}, exists={full_target_path.exists()}, is_dir={full_target_path.is_dir() if full_target_path.exists() else 'N/A'}")
+                return self.error_response(data["id"], "Целевая папка не существует")
+            
+            # Определяем путь нового расположения
+            new_location = full_target_path / full_source_path.name
+            
+            # Проверяем, что в целевой папке нет элемента с таким же именем
+            if new_location.exists():
+                return self.error_response(data["id"], f"Элемент с именем '{full_source_path.name}' уже существует в целевой папке")
+            
+            # Выполняем перемещение
+            import shutil
+            if full_source_path.is_dir():
+                shutil.move(str(full_source_path), str(new_location))
+            else:
+                shutil.move(str(full_source_path), str(new_location))
+            
+            # Вычисляем относительные пути для ответа
+            try:
+                relative_new_path = str(new_location.relative_to(self.workspace_path))
+            except ValueError:
+                relative_new_path = str(new_location)
+            
+            return {
+                "jsonrpc": "2.0",
+                "id": data["id"],
+                "result": {
+                    "success": True,
+                    "sourcePath": source_path,
+                    "newPath": relative_new_path,
+                    "targetPath": target_path
+                }
+            }
+            
+        except Exception as e:
+            logger.error(f"Error moving item: {str(e)}")
+            return self.error_response(data["id"], f"Ошибка перемещения: {str(e)}")
+    
+    def validate_path(self, path):
+        """Валидация пути"""
+        # Пустой путь, 'data' или '' считается валидным (корневая папка)
+        if not path or path == 'data' or path == '':
+            return True
+        # Простая проверка на наличие опасных символов
+        dangerous_patterns = ['../', '..\\', '<', '>', '|']
+        return not any(pattern in path for pattern in dangerous_patterns)
+    
+    def validate_filename(self, name):
+        """Валидация имени файла"""
+        if not name or len(name.strip()) == 0:
+            return False
+        
+        # Проверка на недопустимые символы
+        invalid_chars = '<>:"/\\|?*'
+        if any(char in name for char in invalid_chars):
+            return False
+            
+        # Проверка на зарезервированные имена Windows
+        reserved_names = ['CON', 'PRN', 'AUX', 'NUL', 'COM1', 'COM2', 'COM3', 
+                         'COM4', 'COM5', 'COM6', 'COM7', 'COM8', 'COM9', 
+                         'LPT1', 'LPT2', 'LPT3', 'LPT4', 'LPT5', 'LPT6', 
+                         'LPT7', 'LPT8', 'LPT9']
+        
+        if name.upper() in reserved_names:
+            return False
+            
+        return True
+    
+    def error_response(self, request_id, message):
+        """Создание ответа об ошибке"""
+        return {
+            "jsonrpc": "2.0",
+            "id": request_id,
+            "error": {
+                "code": -32000,
+                "message": message
+            }
+        }

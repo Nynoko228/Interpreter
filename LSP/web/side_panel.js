@@ -9,6 +9,11 @@ document.addEventListener('DOMContentLoaded', () => {
     const contextMenu = document.getElementById('context-menu');
     const contextNewFile = document.getElementById('context-new-file');
     const contextNewFolder = document.getElementById('context-new-folder');
+    
+    // Переменные для контекстного меню
+    let contextMenuTarget = null; // Элемент, по которому кликнули
+    let draggedElement = null; // Элемент для drag & drop
+    let dropIndicator = null; // Индикатор места сброса
 
     let activePanel = null;
     let fileList = [];
@@ -241,7 +246,53 @@ document.addEventListener('DOMContentLoaded', () => {
         togglePanel('book');
     });
 
-    //Функция для создания нового файла
+    // Функция для создания файла в указанной папке
+    async function createFileInFolder() {
+        try {
+            // Определяем целевую папку
+            let targetPath;
+            if (contextMenuTarget) {
+                if (contextMenuTarget.isDirectory) {
+                    // Создаём в выбранной папке
+                    targetPath = contextMenuTarget.path;
+                } else {
+                    // Создаём в родительской папке файла
+                    targetPath = getParentPath(contextMenuTarget.path);
+                }
+            } else {
+                // Создаём в корневой папке
+                targetPath = currentPath;
+            }
+            
+            // Запрашиваем имя файла у пользователя
+            const fileName = prompt('Введите имя нового файла:');
+            if (!fileName) return;
+            
+            if (!validateFileName(fileName)) {
+                statusBar.textContent = 'Некорректное имя файла';
+                return;
+            }
+            
+            statusBar.textContent = 'Создание файла...';
+            
+            // Создаем файл через LSP
+            const result = await lspClient.createFileInFolder(targetPath, fileName, '');
+            
+            if (result && result.success) {
+                statusBar.textContent = `Файл создан: ${fileName}`;
+                
+                // Обновляем список файлов
+                await refreshCurrentFolder();
+            } else {
+                statusBar.textContent = 'Ошибка создания файла';
+            }
+        } catch (error) {
+            console.error('Ошибка создания файла:', error);
+            statusBar.textContent = 'Ошибка создания файла';
+        }
+    }
+    
+    //Функция для создания нового файла (устаревшая)
     async function createNewFile() {
         try {
             // Запрашиваем имя файла у пользователя
@@ -271,7 +322,53 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     }
 
-    //Функция для создания новой папки
+    // Функция для создания папки в указанной папке
+    async function createFolderInFolder() {
+        try {
+            // Определяем целевую папку
+            let targetPath;
+            if (contextMenuTarget) {
+                if (contextMenuTarget.isDirectory) {
+                    // Создаём в выбранной папке
+                    targetPath = contextMenuTarget.path;
+                } else {
+                    // Создаём в родительской папке файла
+                    targetPath = getParentPath(contextMenuTarget.path);
+                }
+            } else {
+                // Создаём в корневой папке
+                targetPath = currentPath;
+            }
+            
+            // Запрашиваем имя папки у пользователя
+            const folderName = prompt('Введите имя новой папки:');
+            if (!folderName) return;
+            
+            if (!validateFileName(folderName)) {
+                statusBar.textContent = 'Некорректное имя папки';
+                return;
+            }
+            
+            statusBar.textContent = 'Создание папки...';
+            
+            // Создаем папку через LSP
+            const result = await lspClient.createFolderInFolder(targetPath, folderName);
+            
+            if (result && result.success) {
+                statusBar.textContent = `Папка создана: ${folderName}`;
+                
+                // Обновляем список файлов
+                await refreshCurrentFolder();
+            } else {
+                statusBar.textContent = 'Ошибка создания папки';
+            }
+        } catch (error) {
+            console.error('Ошибка создания папки:', error);
+            statusBar.textContent = 'Ошибка создания папки';
+        }
+    }
+    
+    //Функция для создания новой папки (устаревшая)
     async function createNewFolder() {
         try {
             // Запрашиваем имя папки у пользователя
@@ -321,6 +418,147 @@ document.addEventListener('DOMContentLoaded', () => {
             console.error('Ошибка получения пути рабочей директории:', error);
             return '/tmp/workspace';
         }
+    }
+    
+    // Функция для валидации имени файла/папки
+    function validateFileName(name) {
+        if (!name || name.trim().length === 0) {
+            return false;
+        }
+        
+        // Проверка на недопустимые символы для Windows
+        const invalidChars = /[<>:"/\\|?*]/;
+        if (invalidChars.test(name)) {
+            return false;
+        }
+        
+        // Проверка на зарезервированные имена Windows
+        const reservedNames = ['CON', 'PRN', 'AUX', 'NUL', 'COM1', 'COM2', 'COM3', 
+                              'COM4', 'COM5', 'COM6', 'COM7', 'COM8', 'COM9', 
+                              'LPT1', 'LPT2', 'LPT3', 'LPT4', 'LPT5', 'LPT6', 
+                              'LPT7', 'LPT8', 'LPT9'];
+        
+        if (reservedNames.includes(name.toUpperCase())) {
+            return false;
+        }
+        
+        return true;
+    }
+    
+    // Функция для получения родительского пути
+    function getParentPath(path) {
+        if (!path || path === currentPath) {
+            return currentPath;
+        }
+        const lastSlash = path.lastIndexOf('/');
+        if (lastSlash === -1) {
+            return currentPath;
+        }
+        return path.substring(0, lastSlash) || currentPath;
+    }
+    
+    // Функция для обновления текущей папки
+    async function refreshCurrentFolder() {
+        try {
+            console.log('Обновление папки:', currentPath);
+            
+            // Полностью перезагружаем список файлов с сервера
+            isFilesLoaded = false;
+            fileList = [];
+            
+            // Загружаем корневую папку
+            await loadFiles(currentPath);
+            
+            // Для каждой раскрытой папки догружаем содержимое
+            for (const expandedPath of expandedFolders) {
+                try {
+                    const folderContents = await window.lspClient.requestFolder(expandedPath);
+                    // Добавляем новые файлы в fileList
+                    folderContents.forEach(newFile => {
+                        const existingIndex = fileList.findIndex(f => f.path === newFile.path);
+                        if (existingIndex === -1) {
+                            fileList.push(newFile);
+                        }
+                    });
+                } catch (error) {
+                    console.error('Ошибка загрузки папки:', expandedPath, error);
+                }
+            }
+            
+            // Перестроиваем дерево
+            fileTree = buildFileTree(fileList);
+            showPanelContent('files');
+            
+            console.log('Обновление завершено, файлов:', fileList.length);
+        } catch (error) {
+            console.error('Ошибка обновления папки:', error);
+            statusBar.textContent = 'Ошибка обновления';
+        }
+    }
+    
+    // Функция для переименования элемента
+    async function renameItem() {
+        if (!contextMenuTarget || !contextMenuTarget.element) {
+            return;
+        }
+        
+        try {
+            const currentName = contextMenuTarget.name;
+            const newName = prompt('Введите новое имя:', currentName);
+            
+            if (!newName || newName === currentName) {
+                return; // Отмена или имя не изменилось
+            }
+            
+            if (!validateFileName(newName)) {
+                statusBar.textContent = 'Некорректное имя';
+                return;
+            }
+            
+            statusBar.textContent = 'Переименование...';
+            
+            const result = await lspClient.renameItem(contextMenuTarget.path, newName);
+            
+            if (result && result.success) {
+                statusBar.textContent = `Переименовано: ${currentName} → ${newName}`;
+                
+                // Обновляем раскрытые папки, если переименовывалась папка
+                if (contextMenuTarget.isDirectory && result.newPath) {
+                    updateExpandedFoldersAfterRename(contextMenuTarget.path, result.newPath);
+                }
+                
+                // Обновляем текущий файл в редакторе, если он был переименован
+                if (currentFilePath === contextMenuTarget.path && result.newPath) {
+                    currentFilePath = result.newPath;
+                }
+                
+                await refreshCurrentFolder();
+            } else {
+                statusBar.textContent = 'Ошибка переименования';
+            }
+        } catch (error) {
+            console.error('Ошибка переименования:', error);
+            statusBar.textContent = 'Ошибка переименования';
+        }
+    }
+    
+    // Функция для обновления раскрытых папок после переименования
+    function updateExpandedFoldersAfterRename(oldPath, newPath) {
+        const newExpandedFolders = new Set();
+        
+        for (const expandedPath of expandedFolders) {
+            if (expandedPath === oldPath) {
+                newExpandedFolders.add(newPath);
+            } else if (expandedPath.startsWith(oldPath + '/')) {
+                // Обновляем вложенные папки
+                const relativePath = expandedPath.substring(oldPath.length);
+                newExpandedFolders.add(newPath + relativePath);
+            } else {
+                newExpandedFolders.add(expandedPath);
+            }
+        }
+        
+        expandedFolders = newExpandedFolders;
     }
 
     // Improved function for building file tree from flat list
@@ -426,13 +664,44 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     // Обработчики для пунктов меню
-    contextNewFile.addEventListener('click', createNewFile);
-    contextNewFolder.addEventListener('click', createNewFolder);
+    contextNewFile.addEventListener('click', () => createFileInFolder());
+    contextNewFolder.addEventListener('click', () => createFolderInFolder());
+    
+    // Добавляем обработчик для переименования
+    const contextRename = document.getElementById('context-rename');
+    if (contextRename) {
+        contextRename.addEventListener('click', () => renameItem());
+    }
 
-    // Показать контекстное меню при правом клике на sidePanel
+    // Показать контекстное меню при правом клике
     sidePanel.addEventListener('contextmenu', (e) => {
         if (sidePanel.classList.contains('open')) {
             e.preventDefault();
+            
+            // Определяем элемент, по которому кликнули
+            const targetElement = e.target.closest('.panel-item');
+            
+            if (targetElement) {
+                // Клик по файлу или папке
+                contextMenuTarget = {
+                    element: targetElement,
+                    path: targetElement.dataset.path,
+                    isDirectory: targetElement.dataset.isDirectory === 'true',
+                    name: targetElement.querySelector('.folder-name').textContent
+                };
+            } else {
+                // Клик по пустому месту - создаём в корневой папке
+                contextMenuTarget = {
+                    element: null,
+                    path: currentPath,
+                    isDirectory: true,
+                    name: 'корневая папка'
+                };
+            }
+            
+            // Настраиваем видимость пунктов меню
+            configureContextMenu();
+            
             contextMenu.style.display = 'block';
             contextMenu.style.left = `${e.pageX}px`;
             contextMenu.style.top = `${e.pageY}px`;
@@ -443,8 +712,310 @@ document.addEventListener('DOMContentLoaded', () => {
     document.addEventListener('click', (e) => {
         if (!contextMenu.contains(e.target)) {
             contextMenu.style.display = 'none';
+            contextMenuTarget = null;
         }
     });
+    
+    // Функция для настройки видимости пунктов контекстного меню
+    function configureContextMenu() {
+        const renameItem = document.getElementById('context-rename');
+        
+        if (contextMenuTarget && contextMenuTarget.element) {
+            // Есть выбранный элемент - показываем переименование
+            if (renameItem) renameItem.style.display = 'block';
+        } else {
+            // Клик по пустому месту - скрываем переименование
+            if (renameItem) renameItem.style.display = 'none';
+        }
+    }
+    // Инициализация drag & drop
+    initializeDragAndDrop();
+    
+    // Функция для инициализации drag & drop
+    function initializeDragAndDrop() {
+        console.log('Инициализация drag & drop системы');
+        
+        // Обработчики для начала перетаскивания
+        document.addEventListener('mousedown', handleMouseDown);
+        document.addEventListener('mousemove', handleMouseMove);
+        document.addEventListener('mouseup', handleMouseUp);
+        
+        // Предотвращаем стандартное поведение drag & drop
+        document.addEventListener('dragstart', (e) => {
+            e.preventDefault();
+        });
+    }
+    
+    // Обработчик нажатия кнопки мыши
+    function handleMouseDown(e) {
+        // Проверяем, нажата ли левая кнопка мыши
+        if (e.button !== 0) return;
+        
+        const panelItem = e.target.closest('.panel-item');
+        if (!panelItem || !sidePanel.classList.contains('open')) {
+            return;
+        }
+        
+        // Проверяем, что клик не по expand icon
+        if (e.target.closest('.expand-icon')) {
+            return;
+        }
+        
+        // Сохраняем информацию о перетаскиваемом элементе
+        draggedElement = {
+            element: panelItem,
+            path: panelItem.dataset.path,
+            isDirectory: panelItem.dataset.isDirectory === 'true',
+            name: panelItem.querySelector('.folder-name').textContent,
+            startX: e.clientX,
+            startY: e.clientY,
+            isDragging: false
+        };
+        
+        // Предотвращаем выделение текста
+        e.preventDefault();
+    }
+    
+    // Обработчик движения мыши
+    function handleMouseMove(e) {
+        if (!draggedElement) return;
+        
+        // Проверяем, началось ли перетаскивание
+        const deltaX = Math.abs(e.clientX - draggedElement.startX);
+        const deltaY = Math.abs(e.clientY - draggedElement.startY);
+        
+        if (!draggedElement.isDragging && (deltaX > 5 || deltaY > 5)) {
+            // Начинаем перетаскивание
+            draggedElement.isDragging = true;
+            startDragging();
+        }
+        
+        if (draggedElement.isDragging) {
+            updateDragVisuals(e);
+            updateDropTarget(e);
+        }
+    }
+    
+    // Обработчик отпускания кнопки мыши
+    function handleMouseUp(e) {
+        if (!draggedElement) return;
+        
+        if (draggedElement.isDragging) {
+            handleDrop(e);
+        }
+        
+        // Очищаем состояние
+        cleanup();
+    }
+    
+    // Начало перетаскивания
+    function startDragging() {
+        // Добавляем визуальные эффекты
+        draggedElement.element.style.opacity = '0.5';
+        draggedElement.element.style.pointerEvents = 'none';
+        
+        // Создаём индикатор перетаскивания
+        createDragIndicator();
+        
+        // Добавляем класс к body для изменения курсора
+        document.body.classList.add('dragging');
+        
+        console.log('Начато перетаскивание:', draggedElement.name);
+    }
+    
+    // Создание индикатора перетаскивания
+    function createDragIndicator() {
+        if (dropIndicator) {
+            dropIndicator.remove();
+        }
+        
+        dropIndicator = document.createElement('div');
+        dropIndicator.className = 'drag-indicator';
+        dropIndicator.innerHTML = `
+            <span class="drag-icon">${draggedElement.isDirectory ? '📁' : '📄'}</span>
+            <span class="drag-name">${draggedElement.name}</span>
+        `;
+        
+        document.body.appendChild(dropIndicator);
+    }
+    
+    // Обновление визуальных эффектов перетаскивания
+    function updateDragVisuals(e) {
+        if (dropIndicator) {
+            dropIndicator.style.left = `${e.clientX + 10}px`;
+            dropIndicator.style.top = `${e.clientY - 10}px`;
+        }
+    }
+    
+    // Обновление цели сброса
+    function updateDropTarget(e) {
+        // Убираем предыдущую подсветку
+        document.querySelectorAll('.drop-target').forEach(el => {
+            el.classList.remove('drop-target');
+        });
+        
+        // Находим элемент под курсором
+        const elementUnderCursor = document.elementFromPoint(e.clientX, e.clientY);
+        const targetItem = elementUnderCursor?.closest('.panel-item');
+        
+        // Проверяем сброс на папку
+        if (targetItem && targetItem !== draggedElement.element) {
+            const isTargetDirectory = targetItem.dataset.isDirectory === 'true';
+            
+            // Можно сбрасывать только в папки
+            if (isTargetDirectory) {
+                targetItem.classList.add('drop-target');
+            }
+        } 
+        // Проверяем сброс на пустую область панели (корневая папка)
+        else if (elementUnderCursor?.closest('.panel-section') && !targetItem) {
+            // Если курсор над панелью файлов, но не над конкретным элементом
+            const panelSection = elementUnderCursor.closest('.panel-section');
+            panelSection.classList.add('drop-target');
+        }
+    }
+    
+    // Обработка сброса
+    function handleDrop(e) {
+        const elementUnderCursor = document.elementFromPoint(e.clientX, e.clientY);
+        const targetItem = elementUnderCursor?.closest('.panel-item');
+        
+        // Проверяем сброс на папку
+        if (targetItem && targetItem !== draggedElement.element) {
+            const isTargetDirectory = targetItem.dataset.isDirectory === 'true';
+            const targetPath = targetItem.dataset.path;
+            const targetName = targetItem.querySelector('.folder-name').textContent;
+            
+            if (isTargetDirectory) {
+                // Показываем диалог подтверждения
+                showMoveConfirmation(draggedElement, targetPath, targetName);
+            }
+        }
+        // Проверяем сброс на корневую область
+        else if (elementUnderCursor?.closest('.panel-section') && !targetItem) {
+            // Перемещение в корневую папку (data)
+            showMoveToRootConfirmation(draggedElement);
+        }
+    }
+    
+    // Показ диалога подтверждения перемещения
+    function showMoveConfirmation(sourceItem, targetPath, targetName) {
+        const sourceType = sourceItem.isDirectory ? 'папку' : 'файл';
+        const message = `Переместить ${sourceType} "${sourceItem.name}" в папку "${targetName}" (путь: ${targetPath})?`;
+        
+        if (confirm(message)) {
+            performMove(sourceItem.path, targetPath, sourceItem.isDirectory, sourceItem.name);
+        }
+    }
+    
+    // Показ диалога подтверждения перемещения в корень
+    function showMoveToRootConfirmation(sourceItem) {
+        const sourceType = sourceItem.isDirectory ? 'папку' : 'файл';
+        const message = `Переместить ${sourceType} "${sourceItem.name}" в корневую папку?`;
+        
+        if (confirm(message)) {
+            // Используем пустую строку для корневой папки вместо currentPath
+            performMove(sourceItem.path, '', sourceItem.isDirectory, sourceItem.name);
+        }
+    }
+    
+    // Выполнение перемещения
+    async function performMove(sourcePath, targetPath, isDirectory, itemName) {
+        try {
+            statusBar.textContent = 'Перемещение...';
+            
+            const result = await lspClient.moveItem(sourcePath, targetPath);
+            
+            if (result && result.success) {
+                statusBar.textContent = `Перемещено: ${sourcePath} → ${targetPath || 'корень'}`;
+                
+                // Обновляем раскрытые папки
+                if (isDirectory && result.newPath) {
+                    updateExpandedFoldersAfterMove(sourcePath, result.newPath);
+                }
+                
+                // Обновляем текущий файл в редакторе
+                if (currentFilePath === sourcePath && result.newPath) {
+                    currentFilePath = result.newPath;
+                }
+                
+                // Обновляем fileList - удаляем старые записи и перезагружаем
+                await updateFileListAfterMove(sourcePath, result.newPath, isDirectory);
+            } else {
+                statusBar.textContent = 'Ошибка перемещения';
+            }
+        } catch (error) {
+            console.error('Ошибка перемещения:', error);
+            statusBar.textContent = 'Ошибка перемещения';
+        }
+    }
+    
+    // Обновление раскрытых папок после перемещения
+    function updateExpandedFoldersAfterMove(oldPath, newPath) {
+        const newExpandedFolders = new Set();
+        
+        for (const expandedPath of expandedFolders) {
+            if (expandedPath === oldPath) {
+                newExpandedFolders.add(newPath);
+            } else if (expandedPath.startsWith(oldPath + '/')) {
+                // Обновляем вложенные папки
+                const relativePath = expandedPath.substring(oldPath.length);
+                newExpandedFolders.add(newPath + relativePath);
+            } else {
+                newExpandedFolders.add(expandedPath);
+            }
+        }
+        
+        expandedFolders = newExpandedFolders;
+    }
+    
+    // Обновление fileList после перемещения
+    async function updateFileListAfterMove(oldPath, newPath, isDirectory) {
+        // Удаляем старые записи
+        if (isDirectory) {
+            // Для папок удаляем саму папку и всё её содержимое
+            fileList = fileList.filter(file => 
+                file.path !== oldPath && !file.path.startsWith(oldPath + '/')
+            );
+        } else {
+            // Для файлов удаляем только сам файл
+            fileList = fileList.filter(file => file.path !== oldPath);
+        }
+        
+        // Полностью перезагружаем дерево файлов с сервера
+        try {
+            await refreshCurrentFolder();
+        } catch (error) {
+            console.error('Ошибка обновления после перемещения:', error);
+        }
+        
+        console.log('Обновлён fileList после перемещения:', fileList.length, 'элементов');
+    }
+    
+    // Очистка после перетаскивания
+    function cleanup() {
+        if (draggedElement) {
+            // Восстанавливаем внешний вид элемента
+            draggedElement.element.style.opacity = '';
+            draggedElement.element.style.pointerEvents = '';
+            draggedElement = null;
+        }
+        
+        // Удаляем индикаторы
+        if (dropIndicator) {
+            dropIndicator.remove();
+            dropIndicator = null;
+        }
+        
+        // Убираем подсветку целей
+        document.querySelectorAll('.drop-target').forEach(el => {
+            el.classList.remove('drop-target');
+        });
+        
+        // Убираем класс с body
+        document.body.classList.remove('dragging');
+    }
+    
     // Закрытие панели при клике вне ее области
 //    document.addEventListener('click', (e) => {
 //        if (!sidePanel.contains(e.target) && !activityBar.contains(e.target) && sidePanel.classList.contains('open')) {

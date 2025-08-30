@@ -1,5 +1,0 @@
-MATH A = 5
-DO
-    DISP Текущее значение: {A}
-    MATH A = A - 1
-WHILE A > 0

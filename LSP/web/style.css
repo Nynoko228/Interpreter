@@ -326,6 +326,12 @@ body {
     color: #fff;
 }
 
+.context-separator {
+    height: 1px;
+    background: #454545;
+    margin: 4px 0;
+}
+
 /* Улучшенные стили для древовидной структуры */
 .panel-item {
     position: relative;
@@ -474,4 +480,60 @@ body {
 .breadcrumb-separator {
     margin: 0 5px;
     color: #858585;
+}
+
+/* Стили для drag & drop */
+.dragging {
+    cursor: move !important;
+    user-select: none;
+}
+
+.dragging * {
+    cursor: move !important;
+}
+
+.drag-indicator {
+    position: fixed;
+    background: #252526;
+    border: 1px solid #454545;
+    border-radius: 4px;
+    padding: 4px 8px;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    z-index: 9999;
+    pointer-events: none;
+    font-size: 12px;
+    color: #d4d4d4;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.5);
+}
+
+.drag-icon {
+    font-size: 14px;
+}
+
+.drag-name {
+    max-width: 150px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.drop-target {
+    background-color: rgba(86, 156, 214, 0.2) !important;
+    border: 1px dashed #569cd6;
+    border-radius: 3px;
+}
+
+/* Подсветка корневой области при drag & drop */
+.panel-section.drop-target {
+    background-color: rgba(86, 156, 214, 0.1) !important;
+    border: 2px dashed #569cd6;
+    border-radius: 5px;
+    min-height: 100px;
+}
+
+.panel-item.dragging {
+    opacity: 0.5;
+    pointer-events: none;
 }
