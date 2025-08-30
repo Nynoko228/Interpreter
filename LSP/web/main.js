@@ -13,7 +13,7 @@ document.addEventListener('DOMContentLoaded', () => {
     window.lspClient = lspClient;
     lspClient.connect("ws://localhost:8765").then(async () => {
         statusBar.textContent = 'LSP подключен';
-        lspClient.sendDidOpen(editor.value);
+//        lspClient.sendDidOpen(editor.value);
 
         // Попробуем получить спецификацию через LSP
         try {
@@ -22,12 +22,12 @@ document.addEventListener('DOMContentLoaded', () => {
 
             if (spec && Object.keys(spec).length > 0) {
                 await Highlighter.loadSpec(spec);
-                    const highlighterApi = Highlighter.attach({
-                    editorId: 'code-editor',
-                    highlightId: 'highlight',
-                    lineNumbersSelector: '.line-numbers',
-                    activeLineId: 'active-line-highlighter',
-                    debounceMs: 40
+                const highlighterApi = Highlighter.attach({
+                editorId: 'code-editor',
+                highlightId: 'highlight',
+                lineNumbersSelector: '.line-numbers',
+                activeLineId: 'active-line-highlighter',
+                debounceMs: 40
                 });
                 window.highlighterApi = highlighterApi
                 console.info("Highlighter: спецификация загружена из LSP");

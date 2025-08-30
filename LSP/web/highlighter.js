@@ -249,29 +249,29 @@ const Highlighter = (function () {
     });
 
     // Возвращаем API: две публичные функции
-    return {
-      highlightNow: syncHighlight,
-      quickUpdateCurrentLine: quickUpdateCurrentLine
-    };
-  }
+        return {
+            highlightNow: syncHighlight,
+            quickUpdateCurrentLine: quickUpdateCurrentLine
+        };
+    }
 
   // Экспорт API
-  return {
-    loadSpec,
-    loadSpecFromUrl,
-    attach,
-    highlightNow: () => {
-      if (!editor || !highlightEl) return;
-      syncHighlight();
-    },
-    loadSpecFromLspPayload(payload) {
-      const candidate = payload && (payload.spec || payload.syntax || payload);
-      return loadSpec(candidate);
-    },
-    _internal: {
-      tokenizeLine,
-      highlightAllText,
-      getSpec: () => spec
-    }
-  };
+    return {
+        loadSpec,
+        loadSpecFromUrl,
+        attach,
+        highlightNow: () => {
+            if (!editor || !highlightEl) return;
+            syncHighlight();
+        },
+        loadSpecFromLspPayload(payload) {
+            const candidate = payload && (payload.spec || payload.syntax || payload);
+            return loadSpec(candidate);
+        },
+        _internal: {
+            tokenizeLine,
+            highlightAllText,
+            getSpec: () => spec
+        }
+    };
 })();

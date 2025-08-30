@@ -8,21 +8,27 @@
 </head>
 <body>
     <div class="main-container">
-        <div class="activity-bar">
-            <div class="activity-bar-content">
-                <button class="activity-btn" id="files-btn" title="Файлы">
-                    <img src="svg/files.svg" alt="Файлы">
-                </button>
-                <button class="activity-btn" id="book-btn" title="Справка">
-                    <img src="svg/book.svg" alt="Справка">
-                </button>
-            </div>
+        <div class="activity-bar-content">
+            <button class="activity-btn" id="files-btn" title="Файлы">
+                <img src="svg/files.svg" alt="Файлы">
+            </button>
+            <button class="activity-btn" id="book-btn" title="Справка">
+                <img src="svg/book.svg" alt="Справка">
+            </button>
+            <button class="activity-btn" id="save-btn" title="Сохранить">
+                <img src="svg/save.svg" alt="Сохранить">
+            </button>
         </div>
 
         <div class="side-panel" id="side-panel">
             <div class="panel-content" id="panel-content">
 
             </div>
+        </div>
+
+        <div id="context-menu" class="context-menu">
+            <div class="context-item" id="context-new-file">Создать новый файл</div>
+            <div class="context-item" id="context-new-folder">Создать новую папку</div>
         </div>
 
         <div class="editor-container">
