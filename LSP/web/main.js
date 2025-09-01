@@ -66,37 +66,82 @@ document.addEventListener('DOMContentLoaded', () => {
             }
         }
 
-        lineNumbersContainer.scrollTop = editor.scrollTop;
+        // Синхронизация скролла после обновления номеров строк
+        syncLineNumbersScroll();
         highlightActiveLine();
     }
 
-    // Подсветка активной строки
+    // Функция для синхронизации скролла номеров строк
+    function syncLineNumbersScroll() {
+        if (lineNumbersContainer.scrollTop !== editor.scrollTop) {
+            lineNumbersContainer.scrollTop = editor.scrollTop;
+        }
+    }
+
+    // Подсветка активной строки с улучшенным вычислением позиции
     function highlightActiveLine() {
+        // Очистка предыдущей подсветки
         const oldActive = document.querySelector('.active-line');
         if (oldActive) oldActive.classList.remove('active-line');
 
+        // Получаем текущую позицию курсора
         const cursorPos = editor.selectionStart;
+        
+        // Проверяем корректность позиции
+        if (cursorPos < 0 || cursorPos > editor.value.length) {
+            return; // Некорректная позиция, выходим
+        }
+        
+        // Вычисляем номер строки с учетом краевых случаев
         const textBeforeCursor = editor.value.substring(0, cursorPos);
         const lineNumber = (textBeforeCursor.match(/\n/g) || []).length;
+        const totalLines = (editor.value.match(/\n/g) || []).length + 1;
+        
+        // Проверяем, что номер строки не превышает общее количество строк
+        const correctedLineNumber = Math.min(lineNumber, totalLines - 1);
 
-        if (lineNumber < lineNumbers.children.length) {
-            lineNumbers.children[lineNumber].classList.add('active-line');
+        // Подсветка номера строки с проверкой диапазона
+        if (correctedLineNumber >= 0 && correctedLineNumber < lineNumbers.children.length) {
+            lineNumbers.children[correctedLineNumber].classList.add('active-line');
         }
 
-        updateActiveLineHighlighter(lineNumber);
+        // Обновление позиции подсветки
+        updateActiveLineHighlighter(correctedLineNumber);
     }
 
-    // Обновление подсветки активной строки
+    // Обновление подсветки активной строки с улучшенными вычислениями
     function updateActiveLineHighlighter(lineNumber) {
         if (!activeLineHighlighter) return;
-
+        
         const lineHeight = parseFloat(window.getComputedStyle(editor).lineHeight);
-        const paddingTop = 20;
-        const topPosition = paddingTop + (lineNumber * lineHeight) - editor.scrollTop;
-
-        activeLineHighlighter.style.top = `${topPosition}px`;
-        activeLineHighlighter.style.display = 'block';
-        activeLineHighlighter.style.height = `${lineHeight}px`;
+        const paddingTop = parseFloat(window.getComputedStyle(editor).paddingTop) || 20;
+        
+        // Получаем размеры контейнера редактора
+        const editorRect = editor.getBoundingClientRect();
+        const containerHeight = editorRect.height;
+        
+        // Абсолютная позиция строки в документе (от начала содержимого)
+        const absoluteLineTop = paddingTop + (lineNumber * lineHeight);
+        
+        // Позиция относительно видимой области с учетом точного скролла
+        const currentScrollTop = editor.scrollTop;
+        const relativeTop = absoluteLineTop - currentScrollTop;
+        
+        // Проверяем видимость строки в текущем viewport с учетом padding
+        const viewportStart = paddingTop;
+        const viewportEnd = containerHeight - paddingTop;
+        const isVisible = relativeTop >= 0 && relativeTop <= viewportEnd && relativeTop >= viewportStart;
+        
+        if (isVisible) {
+            // Убеждаемся, что позиция корректна относительно контейнера редактора
+            const finalTop = Math.max(0, Math.min(relativeTop, viewportEnd - lineHeight));
+            activeLineHighlighter.style.top = `${finalTop}px`;
+            activeLineHighlighter.style.display = 'block';
+            activeLineHighlighter.style.height = `${lineHeight}px`;
+            activeLineHighlighter.style.width = '100%';
+        } else {
+            activeLineHighlighter.style.display = 'none';
+        }
     }
 
     // Обработка Tab
@@ -183,10 +228,17 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     }
 
-    // Получаем номер строки по позиции курсора
+    // Получаем номер строки по позиции курсора с улучшенной обработкой краевых случаев
     function getLineNumberFromPos(pos, text) {
+        if (pos < 0) return 0;
+        if (pos > text.length) pos = text.length;
+        
         const textBefore = text.substring(0, pos);
-        return (textBefore.match(/\n/g) || []).length;
+        const lineNumber = (textBefore.match(/\n/g) || []).length;
+        const totalLines = (text.match(/\n/g) || []).length + 1;
+        
+        // Убеждаемся, что номер строки не превышает общее количество
+        return Math.min(lineNumber, totalLines - 1);
     }
 
     // Показываем подсказки под текущей строкой
@@ -583,17 +635,52 @@ document.addEventListener('DOMContentLoaded', () => {
       }
     });
 
+    // Обработчик скролла с оптимизацией и правильной синхронизацией
+    let scrollDebounce;
+    let isScrolling = false;
+    
     editor.addEventListener('scroll', () => {
-        lineNumbersContainer.scrollTop = editor.scrollTop;
-        highlightActiveLine();
+        // Немедленная синхронизация номеров строк
+        syncLineNumbersScroll();
+        
+        // Скрываем автодополнение при скролле
+        hideSuggestions();
+        
+        // Отмечаем, что происходит скроллинг
+        isScrolling = true;
+        
+        // Debounced обновление подсветки для производительности
+        clearTimeout(scrollDebounce);
+        scrollDebounce = setTimeout(() => {
+            isScrolling = false;
+            highlightActiveLine();
+        }, 16); // ~60fps
     });
 
-    editor.addEventListener('click', highlightActiveLine);
-    editor.addEventListener('keyup', highlightActiveLine);
+    editor.addEventListener('click', (e) => {
+        // Немедленное обновление подсветки при клике без зависимости от скроллинга
+        setTimeout(() => {
+            // Отложенное обновление для точного определения позиции курсора
+            highlightActiveLine();
+        }, 1); // Минимальная задержка для обработки клика
+    });
+    
+    editor.addEventListener('keyup', (e) => {
+        // Обновляем подсветку при определённых клавишах
+        if (['ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight', 'Home', 'End', 'PageUp', 'PageDown'].includes(e.key)) {
+            setTimeout(() => {
+                highlightActiveLine();
+            }, 1); // Минимальная задержка для обновления позиции
+        }
+    });
 
     editor.addEventListener('keydown', (e) => {
-        if (['ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight'].includes(e.key)) {
-            setTimeout(highlightActiveLine, 0);
+        // Обработка навигационных клавиш с отложенным обновлением
+        if (['ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight', 'Home', 'End', 'PageUp', 'PageDown'].includes(e.key)) {
+            // Отложенное обновление для корректной обработки позиции курсора
+            setTimeout(() => {
+                highlightActiveLine();
+            }, 5); // Небольшая задержка для обновления позиции
         }
 
         // Обработка автодополнения
@@ -638,19 +725,18 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     });
 
-    // Скрываем автодополнение при скролле
-    editor.addEventListener('scroll', () => {
-        hideSuggestions();
-    });
-
     // Инициализация при загрузке
     updateLineNumbers();
 
-    // Обработчик изменения размера окна
+    // Обработчик изменения размера окна с debounce
+    let resizeDebounce;
     window.addEventListener('resize', () => {
-        const cursorPos = editor.selectionStart;
-        const textBeforeCursor = editor.value.substring(0, cursorPos);
-        const lineNumber = (textBeforeCursor.match(/\n/g) || []).length;
-        updateActiveLineHighlighter(lineNumber);
+        clearTimeout(resizeDebounce);
+        resizeDebounce = setTimeout(() => {
+            const cursorPos = editor.selectionStart;
+            const textBeforeCursor = editor.value.substring(0, cursorPos);
+            const lineNumber = (textBeforeCursor.match(/\n/g) || []).length;
+            updateActiveLineHighlighter(lineNumber);
+        }, 100);
     });
 });

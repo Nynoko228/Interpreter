@@ -246,6 +246,90 @@ document.addEventListener('DOMContentLoaded', () => {
         togglePanel('book');
     });
 
+    // Theme Manager Class
+    class ThemeManager {
+        constructor() {
+            this.currentTheme = 'dark';
+            this.themeIcon = document.getElementById('theme-icon');
+            this.init();
+        }
+
+        init() {
+            // Load saved theme from localStorage
+            this.loadThemePreference();
+            // Apply theme to document
+            this.setTheme(this.currentTheme);
+        }
+
+        toggleTheme() {
+            // Switch between light and dark
+            this.currentTheme = this.currentTheme === 'dark' ? 'light' : 'dark';
+            this.setTheme(this.currentTheme);
+            this.updateIcon();
+            this.saveThemePreference(this.currentTheme);
+        }
+
+        setTheme(theme) {
+            // Apply theme to document root
+            if (theme === 'light') {
+                document.documentElement.setAttribute('data-theme', 'light');
+            } else {
+                document.documentElement.removeAttribute('data-theme');
+            }
+            this.currentTheme = theme;
+        }
+
+        updateIcon() {
+            // Switch between lightbulb icons with smooth transition
+            if (this.themeIcon) {
+                this.themeIcon.style.opacity = '0';
+                
+                setTimeout(() => {
+                    if (this.currentTheme === 'light') {
+                        this.themeIcon.src = 'svg/lightbulb.svg';
+                        this.themeIcon.alt = 'Светлая тема';
+                    } else {
+                        this.themeIcon.src = 'svg/lightbulb-empty.svg';
+                        this.themeIcon.alt = 'Тёмная тема';
+                    }
+                    this.themeIcon.style.opacity = '1';
+                }, 100);
+            }
+        }
+
+        saveThemePreference(theme) {
+            // Store in localStorage
+            localStorage.setItem('lsp-web-ide-theme', theme);
+        }
+
+        loadThemePreference() {
+            // Retrieve from localStorage
+            const savedTheme = localStorage.getItem('lsp-web-ide-theme');
+            if (savedTheme && (savedTheme === 'light' || savedTheme === 'dark')) {
+                this.currentTheme = savedTheme;
+            }
+        }
+    }
+
+    // Initialize theme manager
+    const themeManager = new ThemeManager();
+
+    // Theme toggle button handler
+    const themeToggleBtn = document.getElementById('theme-toggle-btn');
+    if (themeToggleBtn) {
+        themeToggleBtn.addEventListener('click', () => {
+            themeManager.toggleTheme();
+        });
+    }
+
+    // Optional keyboard shortcut for theme toggle
+    document.addEventListener('keydown', (e) => {
+        if (e.ctrlKey && e.altKey && e.key === 't') {
+            e.preventDefault();
+            themeManager.toggleTheme();
+        }
+    });
+
     // Функция для создания файла в указанной папке
     async function createFileInFolder() {
         try {

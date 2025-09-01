@@ -1,3 +1,89 @@
+:root {
+    /* Dark Theme (Default) */
+    --bg-primary: #1e1e1e;
+    --bg-secondary: #252526;
+    --bg-tertiary: #2d2d2d;
+    --bg-quaternary: #333333;
+    --text-primary: #d4d4d4;
+    --text-secondary: #cccccc;
+    --text-tertiary: #858585;
+    --border-color: #454545;
+    --accent-color: #094771;
+    --hover-bg: #2a2d2e;
+    --status-bar-bg: #0078d4;
+    --status-bar-text: #ffffff;
+    --active-line-bg: #323232;
+    --scrollbar-track: #252526;
+    --scrollbar-thumb: #3e3e42;
+    --scrollbar-thumb-hover: #555;
+    
+    /* Syntax highlighting - Dark Theme */
+    --syntax-keyword: #569cd6;
+    --syntax-type: #4ec9b0;
+    --syntax-builtin: #dcdcaa;
+    --syntax-number: #b5cea8;
+    --syntax-string: #ce9178;
+    --syntax-comment: #6a9955;
+    --syntax-func: #dcdcaa;
+    --syntax-op: #c586c0;
+    
+    /* Caret color */
+    --caret-color: #ffffff;
+}
+
+[data-theme="light"] {
+    /* Light Theme (PyCharm Light) */
+    --bg-primary: #f2f2f2;
+    --bg-secondary: #ffffff;
+    --bg-tertiary: #f8f8f8;
+    --bg-quaternary: #f8f8f8;
+    --text-primary: #2b2b2b;
+    --text-secondary: #4a4a4a;
+    --text-tertiary: #999999;
+    --border-color: #c4c4c4;
+    --accent-color: #316ac5;
+    --hover-bg: #e8e8e8;
+    --status-bar-bg: #3c7dd1;
+    --status-bar-text: #ffffff;
+    --active-line-bg: #fffae3;
+    --scrollbar-track: #f8f8f8;
+    --scrollbar-thumb: #c4c4c4;
+    --scrollbar-thumb-hover: #a0a0a0;
+    
+    /* Syntax highlighting - Light Theme */
+    --syntax-keyword: #0033b3;
+    --syntax-type: #067d17;
+    --syntax-builtin: #795e26;
+    --syntax-number: #1750eb;
+    --syntax-string: #067d17;
+    --syntax-comment: #8c8c8c;
+    --syntax-func: #795e26;
+    --syntax-op: #000080;
+    
+    /* Caret color */
+    --caret-color: #000000;
+}
+
+/* Smooth theme transitions */
+* {
+    transition: 
+        background-color 0.3s ease-in-out,
+        color 0.3s ease-in-out,
+        border-color 0.3s ease-in-out;
+}
+
+/* Icon transition for smooth swap */
+#theme-icon {
+    transition: opacity 0.2s ease;
+}
+
+/* Respect reduced motion preference */
+@media (prefers-reduced-motion: reduce) {
+    * {
+        transition-duration: 0.01ms !important;
+    }
+}
+
 * {
     margin: 0;
     padding: 0;
@@ -6,8 +92,8 @@
 
 body {
     font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-    background: #1e1e1e;
-    color: #d4d4d4;
+    background: var(--bg-primary);
+    color: var(--text-primary);
     height: 100vh;
     display: flex;
     flex-direction: column;
@@ -21,12 +107,12 @@ body {
 
 .activity-bar {
     width: 50px;
-    background-color: #333333;
+    background-color: var(--bg-quaternary);
     display: flex;
     flex-direction: column;
     align-items: center;
     padding-top: 10px;
-    border-right: 1px solid #454545;
+    border-right: 1px solid var(--border-color);
     z-index: 4;
 }
 
@@ -48,11 +134,11 @@ body {
 }
 
 .activity-btn:hover {
-    background-color: #2a2d2e;
+    background-color: var(--hover-bg);
 }
 
 .activity-btn.active {
-    background-color: #094771;
+    background-color: var(--accent-color);
 }
 
 .activity-btn img {
@@ -69,8 +155,8 @@ body {
 /* Стили для боковой панели */
 .side-panel {
     width: 0;
-    background-color: #252526;
-    border-right: 1px solid #454545;
+    background-color: var(--bg-secondary);
+    border-right: 1px solid var(--border-color);
     overflow: hidden;
     transition: width 0.2s ease;
     z-index: 3;
@@ -93,7 +179,7 @@ body {
 .panel-section h3 {
     font-size: 14px;
     margin-bottom: 10px;
-    color: #cccccc;
+    color: var(--text-secondary);
     text-transform: uppercase;
     letter-spacing: 0.5px;
 }
@@ -107,11 +193,11 @@ body {
 }
 
 .panel-item:hover {
-    background-color: #2a2d2e;
+    background-color: var(--hover-bg);
 }
 
 .panel-item.active {
-    background-color: #094771;
+    background-color: var(--accent-color);
 }
 
 .editor-container {
@@ -133,8 +219,8 @@ body {
     width: 100%;
     padding: 20px 5px;
     padding-bottom: 0px;
-    background-color: #2d2d2d;
-    color: #858585;
+    background-color: var(--bg-tertiary);
+    color: var(--text-tertiary);
     text-align: right;
     font-family: 'Consolas', monospace;
     font-size: 16px;
@@ -151,13 +237,13 @@ body {
     overflow: hidden;
     position: relative;
     z-index: 2;
-    background-color: #2d2d2d;
+    background-color: var(--bg-tertiary);
 }
 
 #code-editor {
     flex: 1;
     background: transparent;
-    color: #d4d4d4;
+    color: var(--text-primary);
     border: none;
     padding: 20px;
     padding-bottom: 0px;
@@ -172,7 +258,7 @@ body {
     margin: 0;
     z-index: 1;
     color: transparent;       /* чтобы видна была подсветка в .highlight */
-    caret-color: #ffffff;     /* видимая каретка */
+    caret-color: var(--caret-color);     /* видимая каретка */
 }
 
 /* Новый элемент для подсветки активной строки */
@@ -182,15 +268,16 @@ body {
     top: 0;
     width: 100%;
     height: 24px; /* Высота строки */
-    background-color: #323232; /* Цвет подсветки как в PyCharm Dark */
+    background-color: var(--active-line-bg); /* Цвет подсветки как в PyCharm */
     z-index: 0; /* Под редактором и номерами строк */
     display: none; /* Скрыт по умолчанию */
     pointer-events: none; /* Чтобы не мешал взаимодействию с редактором */
+    transition: top 0.1s ease-out; /* Плавное позиционирование */
 }
 
 .status-bar {
-    background: #0078d4;
-    color: white;
+    background: var(--status-bar-bg);
+    color: var(--status-bar-text);
     padding: 5px 15px;
     font-size: 12px;
     position: relative;
@@ -203,29 +290,29 @@ body {
 }
 
 #code-editor::-webkit-scrollbar-track {
-    background: #252526;
+    background: var(--scrollbar-track);
 }
 
 #code-editor::-webkit-scrollbar-thumb {
-    background: #3e3e42;
+    background: var(--scrollbar-thumb);
     border-radius: 5px;
 }
 
 #code-editor::-webkit-scrollbar-thumb:hover {
-    background: #555;
+    background: var(--scrollbar-thumb-hover);
 }
 
 /* Подсветка активной строки в номерах (как в PyCharm) */
 .active-line {
-    background: #323232;
-    color: #ffffff;
+    background: var(--active-line-bg);
+    color: var(--text-primary);
 }
 
 /* Стили для автодополнения */
 #autocomplete-container {
     position: fixed;
-    background: #252526;
-    border: 1px solid #454545;
+    background: var(--bg-secondary);
+    border: 1px solid var(--border-color);
     border-radius: 4px;
     box-shadow: 0 2px 8px rgba(0, 0, 0, 0.5);
     z-index: 1000;
@@ -243,12 +330,12 @@ body {
     cursor: pointer;
     font-family: 'Consolas', monospace;
     font-size: 14px;
-    color: #d4d4d4;
+    color: var(--text-primary);
     z-index: 1000;
 }
 
 .autocomplete-item:hover, .autocomplete-item.selected {
-    background: #094771;
+    background: var(--accent-color);
     color: #fff;
 }
 
@@ -279,7 +366,7 @@ body {
     font-family: 'Consolas', monospace;
     font-size: 16px;
     line-height: 24px;
-    color: #d4d4d4; /* сам текст рендерится через span'ы с цветом */
+    color: var(--text-primary); /* сам текст рендерится через span'ы с цветом */
     z-index: 0; /* под textarea (textarea имеет z-index:1) */
     tab-size: 4;
 }
@@ -287,14 +374,14 @@ body {
 .highlight.token { color: inherit; }
 
 /* токены для синтаксиса */
-.token.keyword { color: #569cd6; font-weight: 600; }
-.token.type    { color: #4ec9b0; }
-.token.builtin { color: #dcdcaa; }
-.token.number  { color: #b5cea8; }
-.token.string  { color: #ce9178; }
-.token.comment { color: #6a9955; font-style: italic; }
-.token.func    { color: #dcdcaa; text-decoration: underline; }
-.token.op      { color: #c586c0; }
+.token.keyword { color: var(--syntax-keyword); font-weight: 600; }
+.token.type    { color: var(--syntax-type); }
+.token.builtin { color: var(--syntax-builtin); }
+.token.number  { color: var(--syntax-number); }
+.token.string  { color: var(--syntax-string); }
+.token.comment { color: var(--syntax-comment); font-style: italic; }
+.token.func    { color: var(--syntax-func); text-decoration: underline; }
+.token.op      { color: var(--syntax-op); }
 
 /* чтобы overlay и textarea скроллировались синхронно */
 .editor-container .highlight::-webkit-scrollbar,
@@ -305,8 +392,8 @@ body {
 /* Контекстное меню */
 .context-menu {
     position: fixed;
-    background: #252526;
-    border: 1px solid #454545;
+    background: var(--bg-secondary);
+    border: 1px solid var(--border-color);
     border-radius: 4px;
     box-shadow: 0 2px 8px rgba(0, 0, 0, 0.5);
     z-index: 1000;
@@ -318,17 +405,17 @@ body {
     padding: 8px 12px;
     cursor: pointer;
     font-size: 14px;
-    color: #d4d4d4;
+    color: var(--text-primary);
 }
 
 .context-item:hover {
-    background: #094771;
+    background: var(--accent-color);
     color: #fff;
 }
 
 .context-separator {
     height: 1px;
-    background: #454545;
+    background: var(--border-color);
     margin: 4px 0;
 }
 
@@ -343,7 +430,7 @@ body {
 }
 
 .panel-item:hover {
-    background-color: #2a2d2e;
+    background-color: var(--hover-bg);
 }
 
 .panel-item.directory {
@@ -382,7 +469,7 @@ body {
     height: 16px;
     font-size: 12px;
     cursor: pointer;
-    color: #858585;
+    color: var(--text-tertiary);
     user-select: none;
     transition: transform 0.2s ease-in-out, color 0.15s ease;
     flex-shrink: 0;
@@ -390,7 +477,7 @@ body {
 }
 
 .expand-icon:hover {
-    color: #ffffff;
+    color: var(--text-primary);
     background-color: rgba(255, 255, 255, 0.1);
     border-radius: 3px;
 }
@@ -440,11 +527,11 @@ body {
 }
 
 .folder-icon.collapsed {
-    color: #cccccc;
+    color: var(--text-secondary);
 }
 
 .folder-icon.file {
-    color: #d4d4d4;
+    color: var(--text-primary);
 }
 
 .folder-name {
@@ -474,12 +561,12 @@ body {
 }
 
 .breadcrumb:hover {
-    background-color: #2a2d2e;
+    background-color: var(--hover-bg);
 }
 
 .breadcrumb-separator {
     margin: 0 5px;
-    color: #858585;
+    color: var(--text-tertiary);
 }
 
 /* Стили для drag & drop */
@@ -494,8 +581,8 @@ body {
 
 .drag-indicator {
     position: fixed;
-    background: #252526;
-    border: 1px solid #454545;
+    background: var(--bg-secondary);
+    border: 1px solid var(--border-color);
     border-radius: 4px;
     padding: 4px 8px;
     display: flex;
@@ -504,7 +591,7 @@ body {
     z-index: 9999;
     pointer-events: none;
     font-size: 12px;
-    color: #d4d4d4;
+    color: var(--text-primary);
     box-shadow: 0 2px 8px rgba(0, 0, 0, 0.5);
 }
 
