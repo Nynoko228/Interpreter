@@ -201,11 +201,10 @@ body {
 }
 
 .editor-container {
+    position: relative;
     flex: 1;
     display: flex;
     overflow: hidden;
-    position: relative;
-    transition: margin-left 0.2s ease;
 }
 
 .side-panel.open ~ .editor-container {
@@ -218,7 +217,7 @@ body {
     left: 0;
     width: 100%;
     padding: 20px 5px;
-    padding-bottom: 0px;
+    padding-bottom: 20px;
     background-color: var(--bg-tertiary);
     color: var(--text-tertiary);
     text-align: right;
@@ -226,6 +225,7 @@ body {
     font-size: 16px;
     line-height: 24px;
     user-select: none;
+    min-height: 100%;
 }
 
 .line-number {
@@ -238,6 +238,7 @@ body {
     position: relative;
     z-index: 2;
     background-color: var(--bg-tertiary);
+    min-height: 100%; /* Добавлено для правильного скроллинга */
 }
 
 #code-editor {
@@ -246,7 +247,7 @@ body {
     color: var(--text-primary);
     border: none;
     padding: 20px;
-    padding-bottom: 0px;
+    padding-bottom: 20px;
     font-size: 16px;
     line-height: 24px;
     resize: none;
@@ -359,9 +360,9 @@ body {
     left: 50px;
     right: 0;
     padding: 20px;
-    padding-bottom: 0px;
+    padding-bottom: 20px;
     pointer-events: none;
-    white-space: pre-wrap;
+    white-space: pre;
     overflow: auto;
     font-family: 'Consolas', monospace;
     font-size: 16px;
@@ -369,9 +370,10 @@ body {
     color: var(--text-primary); /* сам текст рендерится через span'ы с цветом */
     z-index: 0; /* под textarea (textarea имеет z-index:1) */
     tab-size: 4;
+    min-height: 100%;
 }
 
-.highlight.token { color: inherit; }
+.highlight .token { color: inherit; }
 
 /* токены для синтаксиса */
 .token.keyword { color: var(--syntax-keyword); font-weight: 600; }

@@ -112,26 +112,28 @@ document.addEventListener('DOMContentLoaded', () => {
     // Обновление подсветки активной строки с улучшенными вычислениями
     function updateActiveLineHighlighter(lineNumber) {
         if (!activeLineHighlighter) return;
-        
+
         const lineHeight = parseFloat(window.getComputedStyle(editor).lineHeight);
         const paddingTop = parseFloat(window.getComputedStyle(editor).paddingTop) || 20;
-        
+
         // Получаем размеры контейнера редактора
         const editorRect = editor.getBoundingClientRect();
         const containerHeight = editorRect.height;
-        
+
         // Абсолютная позиция строки в документе (от начала содержимого)
         const absoluteLineTop = paddingTop + (lineNumber * lineHeight);
-        
+
         // Позиция относительно видимой области с учетом точного скролла
         const currentScrollTop = editor.scrollTop;
         const relativeTop = absoluteLineTop - currentScrollTop;
-        
+
         // Проверяем видимость строки в текущем viewport с учетом padding
         const viewportStart = paddingTop;
         const viewportEnd = containerHeight - paddingTop;
-        const isVisible = relativeTop >= 0 && relativeTop <= viewportEnd && relativeTop >= viewportStart;
-        
+//        const isVisible = relativeTop >= 0 && relativeTop <= viewportEnd && relativeTop >= viewportStart;
+        console.log(`relativeTop: ${relativeTop}, viewportStart: ${viewportStart}, viewportEnd: ${viewportEnd}`);
+        const isVisible = relativeTop >= 0 && relativeTop <= viewportEnd;
+
         if (isVisible) {
             // Убеждаемся, что позиция корректна относительно контейнера редактора
             const finalTop = Math.max(0, Math.min(relativeTop, viewportEnd - lineHeight));
