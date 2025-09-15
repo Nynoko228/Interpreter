@@ -1,9 +1,9 @@
 document.addEventListener('DOMContentLoaded', () => {
     const editor = document.getElementById('code-editor');
     const statusBar = document.getElementById('status-bar');
-    const lineNumbersContainer = document.querySelector('.line-numbers-container');
-    const lineNumbers = document.querySelector('.line-numbers');
-    const activeLineHighlighter = document.getElementById('active-line-highlighter');
+//    const lineNumbersContainer = document.querySelector('.line-numbers-container');
+//    const lineNumbers = document.querySelector('.line-numbers');
+//    const activeLineHighlighter = document.getElementById('active-line-highlighter');
     const autocompleteContainer = document.getElementById('autocomplete-container');
 
     // Создаем клиент LSP
@@ -11,140 +11,35 @@ document.addEventListener('DOMContentLoaded', () => {
     window.editor = editor;
     window.statusBar = statusBar;
     window.lspClient = lspClient;
+
     lspClient.connect("ws://localhost:8765").then(async () => {
         statusBar.textContent = 'LSP подключен';
-//        lspClient.sendDidOpen(editor.value);
 
-        // Попробуем получить спецификацию через LSP
         try {
             const spec = await lspClient.requestSyntax();
             console.log("Спецификация языка от LSP:", spec);
 
             if (spec && Object.keys(spec).length > 0) {
                 await Highlighter.loadSpec(spec);
-                const highlighterApi = Highlighter.attach({
-                editorId: 'code-editor',
-                highlightId: 'highlight',
-                lineNumbersSelector: '.line-numbers',
-                activeLineId: 'active-line-highlighter',
-                debounceMs: 40
+                window.highlighterApi = Highlighter.attach({
+                    editorId: 'code-editor',
+                    highlightId: 'highlight',
+                    lineNumbersSelector: '.line-numbers',
+                    activeLineId: 'active-line-highlighter',
+                    debounceMs: 40
                 });
-                window.highlighterApi = highlighterApi
                 console.info("Highlighter: спецификация загружена из LSP");
             } else {
-                console.warn("Highlighter: пустая спецификация от LSP — использовать локальную или дефолтную");
+                console.warn("Highlighter: пустая спецификация от LSP");
             }
         } catch (err) {
             console.error("Не удалось загрузить спецификацию через LSP:", err);
         }
-        })
-        .catch(error => {
-            statusBar.textContent = 'Ошибка подключения к LSP';
-            console.error("LSP connection error:", error);
-        });
-
-        Highlighter.loadSpec(lspClient).then(() => {
-        Highlighter.attach({ editorId: 'code-editor', highlightId: 'highlight' });
+    }).catch(error => {
+        statusBar.textContent = 'Ошибка подключения к LSP';
+        console.error("LSP connection error:", error);
     });
 
-    // Инициализация номеров строк
-    function updateLineNumbers() {
-        const lines = editor.value.split('\n');
-        const lineCount = lines.length;
-        const currentLineCount = lineNumbers.children.length;
-
-        if (lineCount > currentLineCount) {
-            for (let i = currentLineCount + 1; i <= lineCount; i++) {
-                const lineNumberDiv = document.createElement('div');
-                lineNumberDiv.className = 'line-number';
-                lineNumberDiv.textContent = i;
-                lineNumbers.appendChild(lineNumberDiv);
-            }
-        } else if (lineCount < currentLineCount) {
-            for (let i = currentLineCount; i > lineCount; i--) {
-                lineNumbers.removeChild(lineNumbers.lastChild);
-            }
-        }
-
-        // Синхронизация скролла после обновления номеров строк
-        syncLineNumbersScroll();
-        highlightActiveLine();
-    }
-
-    // Функция для синхронизации скролла номеров строк
-    function syncLineNumbersScroll() {
-        if (lineNumbersContainer.scrollTop !== editor.scrollTop) {
-            lineNumbersContainer.scrollTop = editor.scrollTop;
-        }
-    }
-
-    // Подсветка активной строки с улучшенным вычислением позиции
-    function highlightActiveLine() {
-        // Очистка предыдущей подсветки
-        const oldActive = document.querySelector('.active-line');
-        if (oldActive) oldActive.classList.remove('active-line');
-
-        // Получаем текущую позицию курсора
-        const cursorPos = editor.selectionStart;
-        
-        // Проверяем корректность позиции
-        if (cursorPos < 0 || cursorPos > editor.value.length) {
-            return; // Некорректная позиция, выходим
-        }
-        
-        // Вычисляем номер строки с учетом краевых случаев
-        const textBeforeCursor = editor.value.substring(0, cursorPos);
-        const lineNumber = (textBeforeCursor.match(/\n/g) || []).length;
-        const totalLines = (editor.value.match(/\n/g) || []).length + 1;
-        
-        // Проверяем, что номер строки не превышает общее количество строк
-        const correctedLineNumber = Math.min(lineNumber, totalLines - 1);
-
-        // Подсветка номера строки с проверкой диапазона
-        if (correctedLineNumber >= 0 && correctedLineNumber < lineNumbers.children.length) {
-            lineNumbers.children[correctedLineNumber].classList.add('active-line');
-        }
-
-        // Обновление позиции подсветки
-        updateActiveLineHighlighter(correctedLineNumber);
-    }
-
-    // Обновление подсветки активной строки с улучшенными вычислениями
-    function updateActiveLineHighlighter(lineNumber) {
-        if (!activeLineHighlighter) return;
-
-        const lineHeight = parseFloat(window.getComputedStyle(editor).lineHeight);
-        const paddingTop = parseFloat(window.getComputedStyle(editor).paddingTop) || 20;
-
-        // Получаем размеры контейнера редактора
-        const editorRect = editor.getBoundingClientRect();
-        const containerHeight = editorRect.height;
-
-        // Абсолютная позиция строки в документе (от начала содержимого)
-        const absoluteLineTop = paddingTop + (lineNumber * lineHeight);
-
-        // Позиция относительно видимой области с учетом точного скролла
-        const currentScrollTop = editor.scrollTop;
-        const relativeTop = absoluteLineTop - currentScrollTop;
-
-        // Проверяем видимость строки в текущем viewport с учетом padding
-        const viewportStart = paddingTop;
-        const viewportEnd = containerHeight - paddingTop;
-//        const isVisible = relativeTop >= 0 && relativeTop <= viewportEnd && relativeTop >= viewportStart;
-        console.log(`relativeTop: ${relativeTop}, viewportStart: ${viewportStart}, viewportEnd: ${viewportEnd}`);
-        const isVisible = relativeTop >= 0 && relativeTop <= viewportEnd;
-
-        if (isVisible) {
-            // Убеждаемся, что позиция корректна относительно контейнера редактора
-            const finalTop = Math.max(0, Math.min(relativeTop, viewportEnd - lineHeight));
-            activeLineHighlighter.style.top = `${finalTop}px`;
-            activeLineHighlighter.style.display = 'block';
-            activeLineHighlighter.style.height = `${lineHeight}px`;
-            activeLineHighlighter.style.width = '100%';
-        } else {
-            activeLineHighlighter.style.display = 'none';
-        }
-    }
 
     // Обработка Tab
     function handleTab(e, isShift) {
@@ -163,7 +58,6 @@ document.addEventListener('DOMContentLoaded', () => {
             handleSingleCursorTab(isShift, start);
         }
 
-        updateLineNumbers();
     }
 
     // Обработка табуляции для одного курсора
@@ -438,10 +332,6 @@ document.addEventListener('DOMContentLoaded', () => {
         const newCaret = wordStart + suggestion.length;
         editorEl.selectionStart = editorEl.selectionEnd = newCaret;
 
-        // Синхронизация: обновляем номера/подсветку и уведомляем LSP
-        try {
-            updateLineNumbers();
-        } catch (e) { console.warn("updateLineNumbers error:", e); }
 
         // сообщаем серверу об изменении прямо (т.к. программное изменение не вызывает input)
         try {
@@ -548,7 +438,6 @@ document.addEventListener('DOMContentLoaded', () => {
             statusBar.textContent = 'Готов';
         }, 1000);
 
-        updateLineNumbers();
 
         // Отправляем изменения в LSP
         lspClient.sendDidChange(editor.value);
@@ -642,48 +531,10 @@ document.addEventListener('DOMContentLoaded', () => {
     let isScrolling = false;
     
     editor.addEventListener('scroll', () => {
-        // Немедленная синхронизация номеров строк
-        syncLineNumbersScroll();
-        
-        // Скрываем автодополнение при скролле
         hideSuggestions();
-        
-        // Отмечаем, что происходит скроллинг
-        isScrolling = true;
-        
-        // Debounced обновление подсветки для производительности
-        clearTimeout(scrollDebounce);
-        scrollDebounce = setTimeout(() => {
-            isScrolling = false;
-            highlightActiveLine();
-        }, 16); // ~60fps
-    });
-
-    editor.addEventListener('click', (e) => {
-        // Немедленное обновление подсветки при клике без зависимости от скроллинга
-        setTimeout(() => {
-            // Отложенное обновление для точного определения позиции курсора
-            highlightActiveLine();
-        }, 1); // Минимальная задержка для обработки клика
-    });
-    
-    editor.addEventListener('keyup', (e) => {
-        // Обновляем подсветку при определённых клавишах
-        if (['ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight', 'Home', 'End', 'PageUp', 'PageDown'].includes(e.key)) {
-            setTimeout(() => {
-                highlightActiveLine();
-            }, 1); // Минимальная задержка для обновления позиции
-        }
     });
 
     editor.addEventListener('keydown', (e) => {
-        // Обработка навигационных клавиш с отложенным обновлением
-        if (['ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight', 'Home', 'End', 'PageUp', 'PageDown'].includes(e.key)) {
-            // Отложенное обновление для корректной обработки позиции курсора
-            setTimeout(() => {
-                highlightActiveLine();
-            }, 5); // Небольшая задержка для обновления позиции
-        }
 
         // Обработка автодополнения
         if (autocompleteContainer.style.display === 'block') {
@@ -703,7 +554,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 e.preventDefault();
                 hideSuggestions();
             }
-        } else if (e.key === '.' || e.key === ' ') {
+        } else if (e.key === '.') {
             setTimeout(() => {
                 const currentWordInfo = getCurrentWord();
                 if (currentWordInfo.word.length >= 1) {
@@ -727,18 +578,15 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     });
 
-    // Инициализация при загрузке
-    updateLineNumbers();
 
     // Обработчик изменения размера окна с debounce
     let resizeDebounce;
     window.addEventListener('resize', () => {
         clearTimeout(resizeDebounce);
         resizeDebounce = setTimeout(() => {
-            const cursorPos = editor.selectionStart;
-            const textBeforeCursor = editor.value.substring(0, cursorPos);
-            const lineNumber = (textBeforeCursor.match(/\n/g) || []).length;
-            updateActiveLineHighlighter(lineNumber);
+            if (window.highlighterApi) {
+                window.highlighterApi.highlightNow();
+            }
         }, 100);
     });
 });

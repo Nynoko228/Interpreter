@@ -212,12 +212,7 @@ body {
 }
 
 .line-numbers {
-    position: absolute;
-    top: 0;
-    left: 0;
-    width: 100%;
-    padding: 20px 5px;
-    padding-bottom: 20px;
+    padding: 0 5px;
     background-color: var(--bg-tertiary);
     color: var(--text-tertiary);
     text-align: right;
@@ -225,6 +220,8 @@ body {
     font-size: 16px;
     line-height: 24px;
     user-select: none;
+    /* Убираем абсолютное позиционирование */
+    position: static;
     min-height: 100%;
 }
 
@@ -233,15 +230,20 @@ body {
 }
 
 .line-numbers-container {
+    padding: 20px 0;
     width: 50px;
-    overflow: hidden;
+    overflow-y: hidden;
+    overflow-x: hidden;
     position: relative;
     z-index: 2;
     background-color: var(--bg-tertiary);
-    min-height: 100%; /* Добавлено для правильного скроллинга */
+    height: 100%; /* Занимает всю высоту */
+    scrollbar-width: none; /* Скрыть скроллбар в Firefox */
+    -ms-overflow-style: none; /* Скрыть скроллбар в IE и Edge */
 }
 
 #code-editor {
+    box-sizing: border-box;
     flex: 1;
     background: transparent;
     color: var(--text-primary);
@@ -301,6 +303,18 @@ body {
 
 #code-editor::-webkit-scrollbar-thumb:hover {
     background: var(--scrollbar-thumb-hover);
+}
+
+.line-numbers-container::-webkit-scrollbar {
+    display: none; /* Скрыть скроллбар в Chrome, Safari и Opera */
+}
+
+.line-numbers-container {
+    pointer-events: none; /* Отключаем взаимодействие с контейнером */
+}
+
+.line-numbers-container .line-numbers {
+    pointer-events: auto; /* Включаем взаимодействие с номерами строк */
 }
 
 /* Подсветка активной строки в номерах (как в PyCharm) */
