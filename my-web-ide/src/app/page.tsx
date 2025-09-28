@@ -13,16 +13,16 @@ export default function Home() {
       <div className="main-container">
         <div className="activity-bar-content">
           <button className="activity-btn" id="files-btn" title="Файлы">
-            <img src="svg/files.svg" alt="Файлы" />
+            <img src="files.svg" alt="Файлы" />
           </button>
           <button className="activity-btn" id="book-btn" title="Справка">
-            <img src="svg/book.svg" alt="Справка" />
+            <img src="book.svg" alt="Справка" />
           </button>
           <button className="activity-btn" id="save-btn" title="Сохранить">
-            <img src="svg/save.svg" alt="Сохранить" />
+            <img src="save.svg" alt="Сохранить" />
           </button>
           <button className="activity-btn" id="theme-toggle-btn" title="Сменить тему">
-            <img id="theme-icon" src="svg/lightbulb-empty.svg" alt="Тема" />
+            <img id="theme-icon" src="lightbulb-empty.svg" alt="Тема" />
           </button>
         </div>
 
