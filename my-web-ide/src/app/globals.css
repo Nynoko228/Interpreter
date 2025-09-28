@@ -1,5 +1,88 @@
 @import "tailwindcss";
 
+/* Стили для CodeMirror редактора */
+.code-mirror-editor {
+    width: 100%;
+    height: 100%;
+    font-family: 'Consolas', monospace;
+    font-size: 16px;
+    line-height: 24px;
+}
+
+/* CodeMirror editor specific styling */
+.cm-editor {
+    height: 100%;
+    font-family: 'Consolas', monospace;
+    font-size: 16px;
+    line-height: 24px;
+}
+
+/* .cm-focused {
+    outline: none;
+} */
+
+/* Гutter (line numbers) styling with reduced width */
+/* .cm-gutters {
+    background-color: var(--bg-primary) !important;
+    color: var(--text-tertiary);
+    border-right: none;
+    font-family: 'Consolas', monospace;
+    font-size: 16px;
+    min-width: 35px; 
+} */
+
+/* .cm-lineNumbers .cm-gutterElement {
+    padding: 0 0px 0 4px;
+    min-width: 35px;
+    text-align: right;
+    color: var(--text-tertiary);
+} */
+
+/* Continuous active line highlighting */
+/* .cm-activeLine {
+    background-color: var(--active-line-bg) !important;
+} */
+
+/* .cm-activeLineGutter {
+    background-color: var(--active-line-bg) !important;
+    color: var(--text-primary) !important;
+} */
+
+/* Ensure gutter background matches editor background */
+/* .cm-gutters {
+    background-color: var(--bg-primary) !important;
+} */
+
+/* When line is active, both gutter and line should have same background
+.cm-line.cm-activeLine {
+    background-color: var(--active-line-bg) !important;
+} */
+
+/* .cm-gutterElement.cm-activeLineGutter {
+    background-color: var(--active-line-bg) !important;
+} */
+
+/* Ensure no gap between gutter and content
+.cm-content {
+    padding: 20px 0px;
+    margin: 0;
+} */
+
+/* .cm-line {
+    padding-left: 4px;
+    padding-right: 4px;
+} */
+
+/* Selection and cursor */
+/* .cm-selectionBackground {
+    background-color: var(--cm-selection-bg);
+} */
+
+/* .cm-cursor {
+    border-left: 2px solid var(--cm-cursor-color);
+} */
+
+/* Дополнительные CSS переменные для CodeMirror */
 :root {
     /* Dark Theme (Default) */
     --bg-primary: #1e1e1e;
@@ -31,6 +114,19 @@
     
     /* Caret color */
     --caret-color: #ffffff;
+    
+    /* CodeMirror specific variables */
+    --cm-editor-bg: var(--bg-primary);
+    --cm-editor-fg: var(--text-primary);
+    --cm-gutter-bg: var(--bg-tertiary);
+    --cm-gutter-fg: var(--text-tertiary);
+    --cm-active-line-bg: var(--active-line-bg);
+    --cm-selection-bg: rgba(9, 71, 113, 0.4);
+    --cm-cursor-color: var(--caret-color);
+    --cm-search-match-bg: #ffff0050;
+    --cm-search-match-selected-bg: #ff6a0050;
+    --cm-fold-placeholder-bg: var(--bg-secondary);
+    --cm-fold-placeholder-border: var(--border-color);
 }
 
 [data-theme="light"] {
@@ -64,6 +160,19 @@
     
     /* Caret color */
     --caret-color: #000000;
+    
+    /* CodeMirror specific variables for light theme */
+    --cm-editor-bg: var(--bg-primary);
+    --cm-editor-fg: var(--text-primary);
+    --cm-gutter-bg: var(--bg-tertiary);
+    --cm-gutter-fg: var(--text-tertiary);
+    --cm-active-line-bg: var(--active-line-bg);
+    --cm-selection-bg: rgba(49, 106, 197, 0.3);
+    --cm-cursor-color: var(--caret-color);
+    --cm-search-match-bg: #ffff0050;
+    --cm-search-match-selected-bg: #ff6a0050;
+    --cm-fold-placeholder-bg: var(--bg-secondary);
+    --cm-fold-placeholder-border: var(--border-color);
 }
 
 /* Smooth theme transitions */
@@ -213,73 +322,6 @@ body {
     margin-left: 0;
 }
 
-.line-numbers {
-    padding: 0 5px;
-    background-color: var(--bg-tertiary);
-    color: var(--text-tertiary);
-    text-align: right;
-    font-family: 'Consolas', monospace;
-    font-size: 16px;
-    line-height: 24px;
-    user-select: none;
-    /* Убираем абсолютное позиционирование */
-    position: static;
-    min-height: 100%;
-}
-
-.line-number {
-    min-height: 24px;
-}
-
-.line-numbers-container {
-    padding: 20px 0;
-    width: 50px;
-    overflow-y: hidden;
-    overflow-x: hidden;
-    position: relative;
-    z-index: 2;
-    background-color: var(--bg-tertiary);
-    height: 100%; /* Занимает всю высоту */
-    scrollbar-width: none; /* Скрыть скроллбар в Firefox */
-    -ms-overflow-style: none; /* Скрыть скроллбар в IE и Edge */
-}
-
-#code-editor {
-    box-sizing: border-box;
-    flex: 1;
-    background: transparent;
-    color: var(--text-primary);
-    border: none;
-    padding: 20px;
-    padding-bottom: 20px;
-    font-size: 16px;
-    line-height: 24px;
-    resize: none;
-    outline: none;
-    font-family: 'Consolas', monospace;
-    tab-size: 4;
-    white-space: pre;
-    overflow: auto;
-    margin: 0;
-    z-index: 1;
-    color: transparent;       /* чтобы видна была подсветка в .highlight */
-    caret-color: var(--caret-color);     /* видимая каретка */
-}
-
-/* Новый элемент для подсветки активной строки */
-#active-line-highlighter {
-    position: absolute;
-    left: 0;
-    top: 0;
-    width: 100%;
-    height: 24px; /* Высота строки */
-    background-color: var(--active-line-bg); /* Цвет подсветки как в PyCharm */
-    z-index: 0; /* Под редактором и номерами строк */
-    display: none; /* Скрыт по умолчанию */
-    pointer-events: none; /* Чтобы не мешал взаимодействию с редактором */
-    transition: top 0.1s ease-out; /* Плавное позиционирование */
-}
-
 .status-bar {
     background: var(--status-bar-bg);
     color: var(--status-bar-text);
@@ -373,7 +415,7 @@ body {
     position: absolute;
     top: 0;
     bottom: 0;
-    left: 50px;
+    left: 35px; /* Updated to match reduced gutter width */
     right: 0;
     padding: 20px;
     padding-bottom: 20px;
