@@ -97,7 +97,8 @@
     --hover-bg: #2a2d2e;
     --status-bar-bg: #0078d4;
     --status-bar-text: #ffffff;
-    --active-line-bg: #323232;
+    /* --active-line-bg: #323232; */
+    --active-line-bg: rgba(50, 50, 50, 0.4);
     --scrollbar-track: #252526;
     --scrollbar-thumb: #3e3e42;
     --scrollbar-thumb-hover: #555;
@@ -121,7 +122,7 @@
     --cm-gutter-bg: var(--bg-tertiary);
     --cm-gutter-fg: var(--text-tertiary);
     --cm-active-line-bg: var(--active-line-bg);
-    --cm-selection-bg: rgba(9, 71, 113, 0.4);
+    --cm-selection-bg: rgba(9, 71, 113, 0.12);
     --cm-cursor-color: var(--caret-color);
     --cm-search-match-bg: #ffff0050;
     --cm-search-match-selected-bg: #ff6a0050;
@@ -143,7 +144,7 @@
     --hover-bg: #e8e8e8;
     --status-bar-bg: #3c7dd1;
     --status-bar-text: #ffffff;
-    --active-line-bg: #fffae3;
+    --active-line-bg: rgba(255, 250, 227, 0.12);
     --scrollbar-track: #f8f8f8;
     --scrollbar-thumb: #c4c4c4;
     --scrollbar-thumb-hover: #a0a0a0;
