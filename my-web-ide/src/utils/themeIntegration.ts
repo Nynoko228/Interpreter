@@ -31,6 +31,15 @@ function createLightTheme(): Extension {
       fontSize: '16px',
       fontFamily: "'Consolas', monospace"
     },
+    '.cm-selectionBackground, .cm-editor ::selection': {
+      backgroundColor: 'rgba(0, 95, 204, 0.2) !important',
+    },
+    '.cm-selectionLayer': {
+      zIndex: '10'
+    },
+    '&.cm-focused .cm-selectionLayer .cm-selectionBackground': {
+      backgroundColor: 'rgba(0, 95, 204, 0.3) !important'
+    },
     '.cm-content': {
       padding: '20px 0',
       caretColor: 'var(--caret-color)',
@@ -49,7 +58,8 @@ function createLightTheme(): Extension {
       backgroundColor: 'var(--active-line-bg) !important'
     },
     '.cm-activeLineGutter': {
-      backgroundColor: 'var(--active-line-bg) !important'
+      backgroundColor: 'var(--active-line-bg) !important',
+      color: 'var(--text-primary) !important'
     },
     // Номера строк
     '.cm-gutters': {
@@ -118,6 +128,15 @@ function createDarkTheme(): Extension {
       fontSize: '16px',
       fontFamily: "'Consolas', monospace"
     },
+    '.cm-selectionBackground, .cm-editor ::selection': {
+      backgroundColor: 'rgba(173, 214, 255, 0.3) !important',
+    },
+    '.cm-selectionLayer': {
+      zIndex: '10'
+    },
+    '&.cm-focused .cm-selectionLayer .cm-selectionBackground': {
+      backgroundColor: 'rgba(173, 214, 255, 0.4) !important'
+    },
     '.cm-content': {
       padding: '20px 0',
       caretColor: 'var(--caret-color)',
@@ -139,7 +158,8 @@ function createDarkTheme(): Extension {
       backgroundColor: 'var(--active-line-bg) !important'
     },
     '.cm-activeLineGutter': {
-      backgroundColor: 'var(--active-line-bg) !important'
+      backgroundColor: 'var(--active-line-bg) !important',
+      color: 'var(--text-primary) !important'
     },
     // Номера строк
     '.cm-gutters': {
